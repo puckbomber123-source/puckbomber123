@@ -1,0 +1,1 @@
+ALTER TABLE n8n_booking_queue ADD COLUMN IF NOT EXISTS balance_due numeric(10,2);
