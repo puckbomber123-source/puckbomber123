@@ -34,23 +34,25 @@ function buildPlainText(p: ReminderPayload): string {
   const lines: string[] = [
     greeting,
     "",
-    "This is a quick reminder from Piscines Novo about your upcoming pool service.",
-    "We sent a detailed confirmation email recently — if you haven't seen it, please check your spam or junk folder.",
+    `This is a reminder from Piscines Novo to confirm your ${p.serviceType.toLowerCase()} scheduled for ${dateFormatted}.`,
     "",
-    "Here are your appointment details:",
+    "We previously sent you a booking request email with all the details. If you haven't seen it, please check your junk or spam folder — try searching your email for \"pool closing\".",
+    "",
+    "To confirm your appointment, simply reply to this email.",
+    "If you have any questions or need to reschedule, you can also reach us at services@novopiscines.ca.",
+    "",
+    "Your appointment details:",
     "",
     `Service: ${p.serviceType}`,
     `Date: ${dateFormatted}`,
   ];
   if (p.address) lines.push(`Address: ${p.address}`);
   if (p.poolType) lines.push(`Pool Type: ${p.poolType}`);
-  if (p.balanceDue != null && p.balanceDue > 0) lines.push(`Balance Due: $${Number(p.balanceDue).toFixed(2)}`);
+  if (p.balanceDue != null && p.balanceDue > 0) lines.push(`Balance Due: ${Number(p.balanceDue).toFixed(2)}`);
   if (p.adminNote) lines.push(`Note: ${p.adminNote}`);
   lines.push(
     "",
     "Payment is by e-transfer only to depot@novopiscines.ca.",
-    "",
-    "Please reply to this email or contact us at services@novopiscines.ca to confirm, or if you need to cancel or reschedule.",
     "",
     "Important: If our technician is dispatched and the appointment was not cancelled by email beforehand, a $75 travel fee will apply.",
     "",
@@ -80,11 +82,12 @@ function buildHtml(p: ReminderPayload): string {
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:20px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#111;background:#fff;">
   <p style="margin:0 0 12px;">${greeting}</p>
-  <p style="margin:0 0 12px;">This is a quick reminder from Piscines Novo about your upcoming pool service. We sent a detailed confirmation email recently — if you haven't seen it, please check your spam or junk folder.</p>
+  <p style="margin:0 0 12px;">This is a reminder from Piscines Novo to <strong>confirm your ${p.serviceType.toLowerCase()}</strong> scheduled for <strong>${dateFormatted}</strong>.</p>
+  <p style="margin:0 0 12px;">We previously sent you a booking request email with all the details. If you haven't seen it, please check your junk or spam folder — try searching your email for &quot;pool closing&quot;.</p>
+  <p style="margin:0 0 12px;padding:10px;background:#F0FDFA;border-left:3px solid #0F766E;font-size:14px;"><strong>To confirm your appointment, simply reply to this email.</strong><br>If you have any questions or need to reschedule, you can also reach us at <strong>services@novopiscines.ca</strong>.</p>
   <p style="margin:0 0 8px;font-weight:600;">Your appointment details:</p>
   <table style="border-collapse:collapse;margin-bottom:12px;">${detailRows}</table>
   <p style="margin:0 0 8px;">Payment is by e-transfer only to <strong>depot@novopiscines.ca</strong>.</p>
-  <p style="margin:0 0 8px;">Please reply to this email or contact us at <strong>services@novopiscines.ca</strong> to confirm, or if you need to cancel or reschedule.</p>
   <p style="margin:0 0 16px;padding:10px;background:#FFF7ED;border-left:3px solid #EA580C;font-size:13px;">Important: If our technician is dispatched and the appointment was not cancelled by email beforehand, a $75 travel fee will apply.</p>
   <p style="margin:0 0 4px;">Thank you for choosing Piscines Novo!</p>
   <p style="margin:4px 0;color:#666;font-size:13px;">Piscines Novo Pool Services<br>services@novopiscines.ca</p>
@@ -114,7 +117,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const dateFormatted = formatDate(p.serviceDate);
-    const subject = `Reminder: Your ${p.serviceType} appointment on ${dateFormatted}`;
+    const subject = `Confirm your ${p.serviceType} — ${dateFormatted}`;
     const textBody = buildPlainText(p);
     const htmlBody = buildHtml(p);
 

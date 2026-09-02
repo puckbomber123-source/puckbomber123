@@ -814,6 +814,7 @@ export default function BookingRequests() {
                         {booking.status === 'pending' && (
                           <div className="flex flex-wrap gap-2 pt-2 border-t border-neutral-100">
                             <button onClick={() => approveBooking(booking)} disabled={processing} className="btn-sm bg-green-600 hover:bg-green-700 text-white btn"><CheckCircle2 className="w-3.5 h-3.5" />{processing ? 'Approving…' : 'Approve & Add to Assignments'}</button>
+                            <button onClick={() => sendReminder(booking)} disabled={processing} className="btn-secondary btn-sm"><Bell className="w-3.5 h-3.5" />{processing ? 'Sending…' : 'Send Reminder'}</button>
                             <button onClick={() => { setEditingId(booking.id); setEditForm({ event_date: booking.event_date, service_type: booking.service_type, custom_note: booking.custom_note || '' }); }} className="btn-secondary btn-sm"><Edit2 className="w-3.5 h-3.5" />Edit</button>
                             <button onClick={() => setRejectingId(booking.id)} className="btn-danger btn-sm"><XCircle className="w-3.5 h-3.5" />Reject</button>
                           </div>
