@@ -1,0 +1,35 @@
+[functions.client-search]
+verify_jwt = false
+
+[functions.create-booking]
+verify_jwt = false
+
+[functions.hubspot-search]
+verify_jwt = false
+
+[functions.resync-all-contacts]
+verify_jwt = false
+
+[functions.send-booking-confirmation]
+verify_jwt = false
+
+[functions.send-booking-reminder]
+verify_jwt = false
+
+[functions.send-onmyway-email]
+verify_jwt = false
+
+[functions.send-reminder-email]
+verify_jwt = false
+
+[functions.send-report-email]
+verify_jwt = false
+
+[functions.send-task-reminder]
+verify_jwt = false
+
+[functions.sync-single-contact]
+verify_jwt = false
+
+[functions.upload-to-r2]
+verify_jwt = false

@@ -1,0 +1,183 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-neutral-100 text-neutral-800 font-sans antialiased;
+    min-height: 100dvh;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-semibold tracking-tight text-neutral-900;
+  }
+}
+
+@layer components {
+  /* ── Layout shells ── */
+  .page-shell {
+    @apply min-h-screen bg-neutral-100 flex flex-col;
+  }
+
+  /* ── Navbar ── */
+  .navbar {
+    @apply sticky top-0 z-40 bg-white border-b border-neutral-200 shadow-card;
+  }
+  .navbar-inner {
+    @apply mx-auto max-w-5xl px-4 sm:px-6 h-14 flex items-center justify-between gap-3;
+  }
+  .navbar-brand {
+    @apply flex items-center gap-2.5 font-semibold text-brand-700 text-base leading-none;
+  }
+
+  /* ── Page header ── */
+  .page-header {
+    @apply bg-white border-b border-neutral-200;
+  }
+  .page-header-inner {
+    @apply mx-auto max-w-5xl px-4 sm:px-6 py-5;
+  }
+  .page-title {
+    @apply text-xl font-semibold text-neutral-900;
+  }
+  .page-subtitle {
+    @apply text-sm text-neutral-500 mt-0.5;
+  }
+
+  /* ── Content area ── */
+  .page-content {
+    @apply mx-auto max-w-5xl w-full px-4 sm:px-6 py-6 flex-1;
+  }
+
+  /* ── Cards ── */
+  .card {
+    @apply bg-white rounded-xl border border-neutral-200 shadow-card;
+  }
+  .card-md {
+    @apply bg-white rounded-xl border border-neutral-200 shadow-card-md;
+  }
+  .card-header {
+    @apply px-5 py-4 border-b border-neutral-100;
+  }
+  .card-body {
+    @apply p-5;
+  }
+  .card-title {
+    @apply text-sm font-semibold text-neutral-800;
+  }
+
+  /* ── Buttons ── */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed select-none;
+  }
+  .btn-sm  { @apply btn text-xs px-3 py-1.5; }
+  .btn-md  { @apply btn text-sm px-4 py-2; }
+  .btn-lg  { @apply btn text-base px-5 py-2.5; }
+
+  .btn-primary {
+    @apply btn-md bg-brand-600 hover:bg-brand-700 text-white focus-visible:ring-brand-500;
+  }
+  .btn-secondary {
+    @apply btn-md bg-white hover:bg-neutral-50 text-neutral-700 border border-neutral-300 focus-visible:ring-brand-400;
+  }
+  .btn-danger {
+    @apply btn-md bg-red-600 hover:bg-red-700 text-white focus-visible:ring-red-500;
+  }
+  .btn-ghost {
+    @apply btn-md bg-transparent hover:bg-neutral-100 text-neutral-600 focus-visible:ring-brand-400;
+  }
+  .btn-icon {
+    @apply btn p-2 rounded-lg bg-transparent hover:bg-neutral-100 text-neutral-500 hover:text-neutral-700;
+  }
+
+  /* ── Form controls ── */
+  .form-label {
+    @apply block text-sm font-medium text-neutral-700 mb-1;
+  }
+  .form-input {
+    @apply w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 placeholder-neutral-400 shadow-sm transition focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-brand-400 disabled:bg-neutral-50 disabled:text-neutral-500;
+  }
+  .form-select {
+    @apply form-input pr-9 appearance-none cursor-pointer;
+  }
+  .form-textarea {
+    @apply form-input resize-none;
+  }
+  .form-error {
+    @apply text-xs text-red-600 mt-1;
+  }
+  .form-hint {
+    @apply text-xs text-neutral-500 mt-1;
+  }
+
+  /* ── Badges ── */
+  .badge {
+    @apply inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full;
+  }
+  .badge-teal    { @apply badge bg-brand-50 text-brand-700 ring-1 ring-inset ring-brand-200; }
+  .badge-green   { @apply badge bg-green-50 text-green-700 ring-1 ring-inset ring-green-200; }
+  .badge-yellow  { @apply badge bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200; }
+  .badge-red     { @apply badge bg-red-50 text-red-700 ring-1 ring-inset ring-red-200; }
+  .badge-blue    { @apply badge bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200; }
+  .badge-gray    { @apply badge bg-neutral-100 text-neutral-600 ring-1 ring-inset ring-neutral-300; }
+
+  /* ── Tables ── */
+  .table-wrapper {
+    @apply w-full overflow-x-auto rounded-xl border border-neutral-200 shadow-card;
+  }
+  .data-table {
+    @apply w-full text-sm text-left;
+  }
+  .data-table thead {
+    @apply bg-neutral-50 border-b border-neutral-200;
+  }
+  .data-table th {
+    @apply px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wide whitespace-nowrap;
+  }
+  .data-table td {
+    @apply px-4 py-3 text-neutral-800 border-b border-neutral-100;
+  }
+  .data-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+  .data-table tbody tr {
+    @apply bg-white hover:bg-neutral-50 transition-colors;
+  }
+
+  /* ── Divider ── */
+  .divider {
+    @apply border-t border-neutral-200 my-4;
+  }
+
+  /* ── Empty state ── */
+  .empty-state {
+    @apply flex flex-col items-center justify-center py-16 text-center;
+  }
+  .empty-state-icon {
+    @apply w-12 h-12 text-neutral-300 mb-3;
+  }
+  .empty-state-title {
+    @apply text-sm font-semibold text-neutral-600;
+  }
+  .empty-state-desc {
+    @apply text-xs text-neutral-400 mt-1;
+  }
+
+  /* ── Spinner ── */
+  .spinner {
+    @apply animate-spin rounded-full border-2 border-neutral-200 border-t-brand-600;
+  }
+
+  /* ── Section title ── */
+  .section-title {
+    @apply text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-3;
+  }
+}
