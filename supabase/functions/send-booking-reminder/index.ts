@@ -38,8 +38,8 @@ function buildPlainText(p: ReminderPayload): string {
     "",
     "We previously sent you a booking request email with all the details. If you haven't seen it, please check your junk or spam folder — try searching your email for \"pool closing\".",
     "",
-    "To confirm your appointment, simply reply to this email.",
-    "If you have any questions or need to reschedule, you can also reach us at services@novopiscines.ca.",
+    "Your appointment is almost confirmed — just confirm in the recent email we sent you. If you didn't receive it, it may have ended up in your spam folder.",
+    "If you have any questions, just reply to this email or call us at services@novopiscines.ca.",
     "",
     "Your appointment details:",
     "",
@@ -84,7 +84,7 @@ function buildHtml(p: ReminderPayload): string {
   <p style="margin:0 0 12px;">${greeting}</p>
   <p style="margin:0 0 12px;">This is a reminder from Piscines Novo to <strong>confirm your ${p.serviceType.toLowerCase()}</strong> scheduled for <strong>${dateFormatted}</strong>.</p>
   <p style="margin:0 0 12px;">We previously sent you a booking request email with all the details. If you haven't seen it, please check your junk or spam folder — try searching your email for &quot;pool closing&quot;.</p>
-  <p style="margin:0 0 12px;padding:10px;background:#F0FDFA;border-left:3px solid #0F766E;font-size:14px;"><strong>To confirm your appointment, simply reply to this email.</strong><br>If you have any questions or need to reschedule, you can also reach us at <strong>services@novopiscines.ca</strong>.</p>
+  <p style="margin:0 0 12px;padding:10px;background:#F0FDFA;border-left:3px solid #0F766E;font-size:14px;"><strong>Your appointment is almost confirmed — just confirm in the recent email we sent you.</strong> If you didn't receive it, it may have ended up in your spam folder.<br>If you have any questions, just reply to this email or call us at <strong>services@novopiscines.ca</strong>.</p>
   <p style="margin:0 0 8px;font-weight:600;">Your appointment details:</p>
   <table style="border-collapse:collapse;margin-bottom:12px;">${detailRows}</table>
   <p style="margin:0 0 8px;">Payment is by e-transfer only to <strong>depot@novopiscines.ca</strong>.</p>
