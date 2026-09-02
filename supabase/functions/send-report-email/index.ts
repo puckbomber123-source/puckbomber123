@@ -544,20 +544,20 @@ Deno.serve(async (req: Request) => {
       const b = payload.booking;
       const subject = `Booking Rejected — ${b.client_name} — ${b.service_type} — ${b.event_date}`;
       const html = buildRejectionHtml(b);
-      await sendEmail(RESEND_KEY, { to: [ADMIN_EMAIL], subject, html });
+      await sendEmail(RESEND_KEY, { to: [ADMIN_EMAIL], subject, html, cc: ["services@novopiscines.ca"] });
 
     } else if (emailType === 'rejection_batch' && payload.bookings?.length) {
       const count = payload.bookings.length;
       const reason = payload.reason || 'No reason provided';
       const subject = `${count} Booking Request${count !== 1 ? 's' : ''} Rejected — ${reason.slice(0, 60)}`;
       const html = buildBatchRejectionHtml(payload.bookings, reason, payload.rejected_by || '');
-      await sendEmail(RESEND_KEY, { to: [ADMIN_EMAIL], subject, html });
+      await sendEmail(RESEND_KEY, { to: [ADMIN_EMAIL], subject, html, cc: ["services@novopiscines.ca"] });
 
     } else if (emailType === 'weekly_confirmation' && payload.weekSummary) {
       const ws = payload.weekSummary;
       const subject = `Weekly Service Confirmation — ${ws.weekLabel}`;
       const html = buildWeeklyHtml(ws);
-      await sendEmail(RESEND_KEY, { to: [ADMIN_EMAIL], subject, html });
+      await sendEmail(RESEND_KEY, { to: [ADMIN_EMAIL], subject, html, cc: ["services@novopiscines.ca"] });
 
     } else {
       // Service report
@@ -568,10 +568,10 @@ Deno.serve(async (req: Request) => {
       // Admin always gets the internal copy (full name, cash, phone, email)
       await sendEmail(RESEND_KEY, { to: [ADMIN_EMAIL], subject, html: buildReportHtml(payload, false) });
 
-      // Client gets a separate copy with techStaffId only, no cash/contact details
+      // Client gets a separate copy with techStaffId only, no cash/contact details — CC services so the office sees it too
       const clientEmail = client?.email?.trim();
       if (clientEmail && clientEmail !== ADMIN_EMAIL) {
-        await sendEmail(RESEND_KEY, { to: [clientEmail], subject, html: buildReportHtml(payload, true) });
+        await sendEmail(RESEND_KEY, { to: [clientEmail], subject, html: buildReportHtml(payload, true), cc: ["services@novopiscines.ca"] });
       }
     }
 
@@ -589,7 +589,7 @@ Deno.serve(async (req: Request) => {
 
 async function sendEmail(
   apiKey: string,
-  opts: { to: string[]; subject: string; html: string }
+  opts: { to: string[]; subject: string; html: string; cc?: string[] }
 ): Promise<void> {
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -600,7 +600,7 @@ async function sendEmail(
     body: JSON.stringify({
       from: FROM_ADDRESS,
       to: opts.to,
-      cc: ["services@novopiscines.ca"],
+      ...(opts.cc ? { cc: opts.cc } : {}),
       reply_to: REPLY_TO,
       subject: opts.subject,
       html: opts.html,
