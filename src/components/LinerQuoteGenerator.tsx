@@ -170,24 +170,17 @@ export default function LinerQuoteGenerator() {
         throw new Error('n8n webhook URL is not configured. Set VITE_N8N_LINER_QUOTE_WEBHOOK_URL in the environment.');
       }
 
-      const res = await fetch(webhookUrl, {
+      // Fire-and-forget: send the data to n8n without waiting for a response.
+      // n8n test webhooks hold the connection open, so awaiting would hang forever.
+      fetch(webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-      });
+        mode: 'no-cors',
+      }).catch(() => {});
 
-      if (!res.ok) {
-        throw new Error(`Webhook returned ${res.status}`);
-      }
-
-      const data = (await res.json().catch(() => ({}))) as N8nResult;
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      setResult(data);
-      toast.success('Estimate request sent successfully');
+      setResult({} as N8nResult);
+      toast.success('Estimate request sent to n8n');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to send estimate request';
       setErrorMsg(msg);
