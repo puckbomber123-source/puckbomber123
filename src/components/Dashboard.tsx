@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import {
   LogOut, ClipboardList, User, Settings, CalendarDays,
   Send, ClipboardCheck, RefreshCw, MapPin, Users, Waves, DollarSign, BookOpen,
-  FileText,
+  FileText, Calculator,
 } from 'lucide-react';
 import ClientSearch from './ClientSearch';
 import AssistantRoute from './AssistantRoute';
+import LinerQuoteGenerator from './LinerQuoteGenerator';
 
-type Tab = 'actions' | 'myroute' | 'clients';
+type Tab = 'actions' | 'myroute' | 'clients' | 'liner';
 
 interface ActionCard {
   icon: React.ReactNode;
@@ -41,6 +42,7 @@ export default function Dashboard() {
     ...(isAssistant ? [] : [{ id: 'actions' as Tab, label: 'Actions', icon: <ClipboardList className="w-4 h-4" /> }]),
     { id: 'myroute' as Tab, label: 'My Route', icon: <MapPin className="w-4 h-4" /> },
     ...(canManage ? [{ id: 'clients' as Tab, label: 'Clients', icon: <User className="w-4 h-4" /> }] : []),
+    ...(isAdmin ? [{ id: 'liner' as Tab, label: 'Liner Quote', icon: <Calculator className="w-4 h-4" /> }] : []),
   ];
 
   const actions: ActionCard[] = [
@@ -191,6 +193,19 @@ export default function Dashboard() {
         <div className="mx-auto max-w-5xl w-full">
           <AssistantRoute embedded />
         </div>
+      )}
+
+      {/* Liner Quote tab */}
+      {activeTab === 'liner' && isAdmin && (
+        <main className="page-content">
+          <div className="mb-6">
+            <h1 className="page-title">Liner Quote Generator</h1>
+            <p className="page-subtitle">Generate Spring & Summer liner estimates and send them to n8n for QuickBooks processing.</p>
+          </div>
+          <div className="card card-body">
+            <LinerQuoteGenerator />
+          </div>
+        </main>
       )}
 
       {/* Clients tab */}
