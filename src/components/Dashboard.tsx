@@ -3,13 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import {
   LogOut, ClipboardList, User, Settings, CalendarDays,
   Send, ClipboardCheck, RefreshCw, MapPin, Users, Waves, DollarSign, BookOpen,
-  FileText, Calculator,
+  FileText, Calculator, Paintbrush,
 } from 'lucide-react';
 import ClientSearch from './ClientSearch';
 import AssistantRoute from './AssistantRoute';
 import LinerQuoteGenerator from './LinerQuoteGenerator';
+import CementPaintingQuote from './CementPaintingQuote';
 
-type Tab = 'actions' | 'myroute' | 'clients' | 'liner';
+type Tab = 'actions' | 'myroute' | 'clients' | 'sales';
+type SalesSubTab = 'liner' | 'cement';
 
 interface ActionCard {
   icon: React.ReactNode;
@@ -30,6 +32,7 @@ export default function Dashboard() {
 
   const defaultTab: Tab = isAssistant ? 'myroute' : 'actions';
   const [activeTab, setActiveTab] = useState<Tab>(defaultTab);
+  const [salesSubTab, setSalesSubTab] = useState<SalesSubTab>('liner');
 
   useEffect(() => { if (isAssistant) setActiveTab('myroute'); }, [isAssistant]);
 
@@ -42,7 +45,7 @@ export default function Dashboard() {
     ...(isAssistant ? [] : [{ id: 'actions' as Tab, label: 'Actions', icon: <ClipboardList className="w-4 h-4" /> }]),
     { id: 'myroute' as Tab, label: 'My Route', icon: <MapPin className="w-4 h-4" /> },
     ...(canManage ? [{ id: 'clients' as Tab, label: 'Clients', icon: <User className="w-4 h-4" /> }] : []),
-    ...(isAdmin ? [{ id: 'liner' as Tab, label: 'Liner Quote', icon: <Calculator className="w-4 h-4" /> }] : []),
+    ...(isAdmin ? [{ id: 'sales' as Tab, label: 'Sales', icon: <DollarSign className="w-4 h-4" /> }] : []),
   ];
 
   const actions: ActionCard[] = [
@@ -195,16 +198,61 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Liner Quote tab */}
-      {activeTab === 'liner' && isAdmin && (
+      {/* Sales tab */}
+      {activeTab === 'sales' && isAdmin && (
         <main className="page-content">
           <div className="mb-6">
-            <h1 className="page-title">Liner Quote Generator</h1>
-            <p className="page-subtitle">Generate Spring & Summer liner estimates and send them to n8n for QuickBooks processing.</p>
+            <h1 className="page-title">Sales</h1>
+            <p className="page-subtitle">Generate estimates and send them to n8n for QuickBooks processing.</p>
           </div>
-          <div className="card card-body">
-            <LinerQuoteGenerator />
+
+          {/* Sub-tabs */}
+          <div className="flex gap-2 mb-6">
+            <button
+              onClick={() => setSalesSubTab('liner')}
+              className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
+                salesSubTab === 'liner'
+                  ? 'bg-brand-600 text-white border-brand-600'
+                  : 'bg-white text-neutral-600 border-neutral-300 hover:bg-neutral-50'
+              }`}
+            >
+              <Calculator className="w-4 h-4" /> Liner Quote
+            </button>
+            <button
+              onClick={() => setSalesSubTab('cement')}
+              className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
+                salesSubTab === 'cement'
+                  ? 'bg-brand-600 text-white border-brand-600'
+                  : 'bg-white text-neutral-600 border-neutral-300 hover:bg-neutral-50'
+              }`}
+            >
+              <Paintbrush className="w-4 h-4" /> Cement Pool Painting
+            </button>
           </div>
+
+          {salesSubTab === 'liner' && (
+            <div>
+              <div className="mb-4">
+                <h2 className="text-lg font-semibold text-neutral-900">Liner Quote Generator</h2>
+                <p className="text-sm text-neutral-500">Generate Spring & Summer liner estimates.</p>
+              </div>
+              <div className="card card-body">
+                <LinerQuoteGenerator />
+              </div>
+            </div>
+          )}
+
+          {salesSubTab === 'cement' && (
+            <div>
+              <div className="mb-4">
+                <h2 className="text-lg font-semibold text-neutral-900">Cement Pool Painting Quote</h2>
+                <p className="text-sm text-neutral-500">Generate painting estimates with paint and labour pricing.</p>
+              </div>
+              <div className="card card-body">
+                <CementPaintingQuote />
+              </div>
+            </div>
+          )}
         </main>
       )}
 

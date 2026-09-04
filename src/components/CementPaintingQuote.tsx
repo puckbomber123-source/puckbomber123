@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Search, User, X, Loader2, FileText, Download, Mail, CheckCircle,
-  AlertTriangle, Calculator, Sparkles, Waves,
+  Search, User, X, Loader2, FileText, CheckCircle,
+  AlertTriangle, Calculator, Sparkles, Paintbrush,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
@@ -18,30 +18,18 @@ interface Client {
   pool_type: string;
 }
 
-interface N8nResult {
-  springEstimateNumber?: string;
-  springEstimateTotal?: number;
-  summerEstimateNumber?: string;
-  summerEstimateTotal?: number;
-  springPdfUrl?: string;
-  summerPdfUrl?: string;
-  emailDraftUrl?: string;
-  error?: string;
+const EPOXY_PRICE_PER_GALLON = 264.99;
+const WATERBASE_PRICE_PER_GALLON = 160;
+
+function getLabourDefault(width: number, length: number): number {
+  const w = width || 0;
+  const l = length || 0;
+  if (w <= 14 && l <= 28) return 699;
+  if (w <= 18 && l <= 36) return 799;
+  return 899;
 }
 
-const DEFAULT_SPRING_LINER_PRICE = 6.5;
-const DEFAULT_SUMMER_LINER_PRICE = 5.8;
-
-function getReplacementDefaults(sqft: number): { spring: number; summer: number } {
-  if (sqft <= 392) return { summer: 1149, spring: 1249 };
-  if (sqft <= 450) return { summer: 1149, spring: 1249 };
-  if (sqft <= 512) return { summer: 1249, spring: 1349 };
-  if (sqft <= 544) return { summer: 1249, spring: 1349 };
-  if (sqft <= 648) return { summer: 1249, spring: 1449 };
-  return { summer: 1399, spring: 1549 };
-}
-
-export default function LinerQuoteGenerator() {
+export default function CementPaintingQuote() {
   // ── Client search ──
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Client[]>([]);
@@ -93,12 +81,14 @@ export default function LinerQuoteGenerator() {
   const [width, setWidth] = useState<string>('');
   const [length, setLength] = useState<string>('');
   const [language, setLanguage] = useState<'en' | 'fr'>('en');
-  const [springLinerPrice, setSpringLinerPrice] = useState<string>(String(DEFAULT_SPRING_LINER_PRICE));
-  const [summerLinerPrice, setSummerLinerPrice] = useState<string>(String(DEFAULT_SUMMER_LINER_PRICE));
-  const [springReplacementPrice, setSpringReplacementPrice] = useState<string>('');
-  const [summerReplacementPrice, setSummerReplacementPrice] = useState<string>('');
-  const [includeDrainClean, setIncludeDrainClean] = useState(false);
   const [coldQuote, setColdQuote] = useState(false);
+  const [includeDrainClean, setIncludeDrainClean] = useState(false);
+  const [drainCleanPrice, setDrainCleanPrice] = useState<string>('299');
+  const [numGallons, setNumGallons] = useState<string>('');
+  const [paintType, setPaintType] = useState<'epoxy' | 'waterbase'>('epoxy');
+  const [epoxyPricePerGallon, setEpoxyPricePerGallon] = useState<string>(String(EPOXY_PRICE_PER_GALLON));
+  const [waterbasePricePerGallon, setWaterbasePricePerGallon] = useState<string>(String(WATERBASE_PRICE_PER_GALLON));
+  const [labourPrice, setLabourPrice] = useState<string>('');
 
   // ── Derived square footage ──
   const sqft = useMemo(() => {
@@ -107,28 +97,47 @@ export default function LinerQuoteGenerator() {
     return Math.round(w * l * 100) / 100;
   }, [width, length]);
 
-  // ── Auto-update replacement prices when dimensions change ──
-  const userOverrideRef = useRef<{ spring: boolean; summer: boolean }>({ spring: false, summer: false });
+  // ── Auto-update labour price when dimensions change ──
+  const labourOverrideRef = useRef(false);
 
   useEffect(() => {
-    if (sqft <= 0) return;
-    const defaults = getReplacementDefaults(sqft);
-    if (!userOverrideRef.current.spring) setSpringReplacementPrice(String(defaults.spring));
-    if (!userOverrideRef.current.summer) setSummerReplacementPrice(String(defaults.summer));
-  }, [sqft]);
+    const w = parseFloat(width) || 0;
+    const l = parseFloat(length) || 0;
+    if (w <= 0 || l <= 0) return;
+    if (!labourOverrideRef.current) {
+      setLabourPrice(String(getLabourDefault(w, l)));
+    }
+  }, [width, length]);
 
-  const handleSpringReplacementChange = (v: string) => {
-    userOverrideRef.current.spring = true;
-    setSpringReplacementPrice(v);
+  const handleLabourChange = (v: string) => {
+    labourOverrideRef.current = true;
+    setLabourPrice(v);
   };
-  const handleSummerReplacementChange = (v: string) => {
-    userOverrideRef.current.summer = true;
-    setSummerReplacementPrice(v);
-  };
+
+  // ── Derived totals ──
+  const pricePerGallon = useMemo(() => {
+    return paintType === 'epoxy'
+      ? parseFloat(epoxyPricePerGallon) || 0
+      : parseFloat(waterbasePricePerGallon) || 0;
+  }, [paintType, epoxyPricePerGallon, waterbasePricePerGallon]);
+
+  const paintTotal = useMemo(() => {
+    const gallons = parseInt(numGallons) || 0;
+    return Math.round(gallons * pricePerGallon * 100) / 100;
+  }, [numGallons, pricePerGallon]);
+
+  const drainCost = useMemo(() => {
+    return includeDrainClean ? (parseFloat(drainCleanPrice) || 0) : 0;
+  }, [includeDrainClean, drainCleanPrice]);
+
+  const grandTotal = useMemo(() => {
+    const labour = parseFloat(labourPrice) || 0;
+    return Math.round((paintTotal + labour + drainCost) * 100) / 100;
+  }, [paintTotal, labourPrice, drainCost]);
 
   // ── Submission ──
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<N8nResult | null>(null);
+  const [result, setResult] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const canSubmit = !!selectedClient && sqft > 0 && !submitting;
@@ -137,15 +146,16 @@ export default function LinerQuoteGenerator() {
     if (!selectedClient || sqft <= 0) return;
     setSubmitting(true);
     setErrorMsg(null);
-    setResult(null);
+    setResult(false);
 
-    const springRep = parseFloat(springReplacementPrice) || 0;
-    const summerRep = parseFloat(summerReplacementPrice) || 0;
-    const springLiner = parseFloat(springLinerPrice) || 0;
-    const summerLiner = parseFloat(summerLinerPrice) || 0;
+    const labour = parseFloat(labourPrice) || 0;
+    const gallons = parseInt(numGallons) || 0;
+    const epoxyPerGal = parseFloat(epoxyPricePerGallon) || 0;
+    const waterbasePerGal = parseFloat(waterbasePricePerGallon) || 0;
+    const dcPrice = includeDrainClean ? (parseFloat(drainCleanPrice) || 0) : 0;
 
     try {
-      const { error } = await supabase.from('liner_quotes').insert({
+      const { error } = await supabase.from('cement_painting_quotes').insert({
         client_id: selectedClient.id || null,
         client_name: `${selectedClient.first_name} ${selectedClient.last_name}`.trim(),
         client_email: selectedClient.email,
@@ -153,21 +163,23 @@ export default function LinerQuoteGenerator() {
         length: parseFloat(length) || 0,
         square_footage: sqft,
         language,
-        spring_liner_price: springLiner,
-        spring_replacement_price: springRep,
-        spring_drain_clean_price: includeDrainClean ? 699 : 0,
-        summer_liner_price: summerLiner,
-        summer_replacement_price: summerRep,
-        summer_drain_clean_price: includeDrainClean ? 299 : 0,
-        include_drain_clean: includeDrainClean,
         cold_quote: coldQuote,
+        include_drain_clean: includeDrainClean,
+        drain_clean_price: dcPrice,
+        num_gallons: gallons,
+        epoxy_price_per_gallon: epoxyPerGal,
+        waterbase_price_per_gallon: waterbasePerGal,
+        paint_type: paintType,
+        paint_total: paintTotal,
+        labour_price: labour,
+        grand_total: grandTotal,
       });
 
       if (error) throw error;
 
       setSubmitting(false);
-      setResult({} as N8nResult);
-      toast.success('Estimate request sent to n8n');
+      setResult(true);
+      toast.success('Cement painting estimate sent to n8n');
     } catch (err) {
       setSubmitting(false);
       const msg = err instanceof Error ? err.message : 'Failed to send estimate request';
@@ -177,7 +189,7 @@ export default function LinerQuoteGenerator() {
   };
 
   const resetForm = () => {
-    setResult(null);
+    setResult(false);
     setErrorMsg(null);
   };
 
@@ -301,67 +313,6 @@ export default function LinerQuoteGenerator() {
         </div>
       </div>
 
-      {/* ── Liner prices ── */}
-      <div>
-        <p className="section-title">Liner Price per Sq. Ft.</p>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="form-label">Spring ($/sq.ft)</label>
-            <input
-              type="number"
-              value={springLinerPrice}
-              onChange={e => setSpringLinerPrice(e.target.value)}
-              min="0"
-              step="0.01"
-              className="form-input"
-            />
-          </div>
-          <div>
-            <label className="form-label">Summer ($/sq.ft)</label>
-            <input
-              type="number"
-              value={summerLinerPrice}
-              onChange={e => setSummerLinerPrice(e.target.value)}
-              min="0"
-              step="0.01"
-              className="form-input"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* ── Replacement prices ── */}
-      <div>
-        <p className="section-title">Replacement / Installation Price</p>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="form-label">Spring ($)</label>
-            <input
-              type="number"
-              value={springReplacementPrice}
-              onChange={e => handleSpringReplacementChange(e.target.value)}
-              placeholder="Auto-calculated"
-              min="0"
-              step="1"
-              className="form-input"
-            />
-          </div>
-          <div>
-            <label className="form-label">Summer ($)</label>
-            <input
-              type="number"
-              value={summerReplacementPrice}
-              onChange={e => handleSummerReplacementChange(e.target.value)}
-              placeholder="Auto-calculated"
-              min="0"
-              step="1"
-              className="form-input"
-            />
-          </div>
-        </div>
-        <p className="form-hint">Prices auto-fill based on square footage. Edit to override.</p>
-      </div>
-
       {/* ── Cold Quote ── */}
       <label className="flex items-center gap-3 cursor-pointer rounded-xl border border-neutral-200 px-4 py-3 hover:bg-neutral-50 transition-colors">
         <input
@@ -376,6 +327,89 @@ export default function LinerQuoteGenerator() {
         </div>
       </label>
 
+      {/* ── Paint type ── */}
+      <div>
+        <p className="section-title">Paint Type</p>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => setPaintType('epoxy')}
+            className={`rounded-lg border px-4 py-3 text-sm font-medium transition-all text-left ${
+              paintType === 'epoxy'
+                ? 'bg-brand-600 text-white border-brand-600'
+                : 'bg-white text-neutral-600 border-neutral-300 hover:bg-neutral-50'
+            }`}
+          >
+            <span className="block font-semibold">INSL-X Epoxy</span>
+            <span className={`text-xs ${paintType === 'epoxy' ? 'text-brand-100' : 'text-neutral-500'}`}>Epoxy-base pool paint</span>
+          </button>
+          <button
+            onClick={() => setPaintType('waterbase')}
+            className={`rounded-lg border px-4 py-3 text-sm font-medium transition-all text-left ${
+              paintType === 'waterbase'
+                ? 'bg-brand-600 text-white border-brand-600'
+                : 'bg-white text-neutral-600 border-neutral-300 hover:bg-neutral-50'
+            }`}
+          >
+            <span className="block font-semibold">INSL-X Water-Base</span>
+            <span className={`text-xs ${paintType === 'waterbase' ? 'text-brand-100' : 'text-neutral-500'}`}>Water-base pool paint</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ── Paint price per gallon (editable) ── */}
+      <div>
+        <label className="form-label">
+          {paintType === 'epoxy' ? 'Epoxy Price per Gallon' : 'Water-Base Price per Gallon'} ($/gal)
+        </label>
+        <input
+          type="number"
+          value={paintType === 'epoxy' ? epoxyPricePerGallon : waterbasePricePerGallon}
+          onChange={e => paintType === 'epoxy' ? setEpoxyPricePerGallon(e.target.value) : setWaterbasePricePerGallon(e.target.value)}
+          min="0"
+          step="0.01"
+          className="form-input"
+        />
+      </div>
+
+      {/* ── Number of gallons ── */}
+      <div>
+        <label className="form-label">Number of Gallons</label>
+        <input
+          type="number"
+          value={numGallons}
+          onChange={e => setNumGallons(e.target.value)}
+          placeholder="0"
+          min="0"
+          step="1"
+          className="form-input"
+        />
+      </div>
+
+      {/* ── Paint total display ── */}
+      <div className="rounded-xl bg-neutral-50 border border-neutral-100 px-4 py-3 flex items-center gap-3">
+        <Paintbrush className="w-4 h-4 text-neutral-400" />
+        <span className="text-sm text-neutral-500">Paint Total ({numGallons || 0} gal × ${pricePerGallon.toFixed(2)})</span>
+        <span className="text-sm font-bold text-neutral-900 ml-auto">${paintTotal.toFixed(2)}</span>
+      </div>
+
+      {/* ── Labour price ── */}
+      <div>
+        <p className="section-title">Pool Painting Labour</p>
+        <label className="form-label">Labour Price ($)</label>
+        <input
+          type="number"
+          value={labourPrice}
+          onChange={e => handleLabourChange(e.target.value)}
+          placeholder="Auto-calculated"
+          min="0"
+          step="1"
+          className="form-input"
+        />
+        <p className="form-hint">
+          Auto-fills based on pool size: 14×28 or smaller $699 · 18×36 or smaller $799 · 20×40 or larger $899. Edit to override.
+        </p>
+      </div>
+
       {/* ── Drain & Clean ── */}
       <label className="flex items-center gap-3 cursor-pointer rounded-xl border border-neutral-200 px-4 py-3 hover:bg-neutral-50 transition-colors">
         <input
@@ -386,9 +420,29 @@ export default function LinerQuoteGenerator() {
         />
         <div className="flex-1">
           <span className="text-sm font-medium text-neutral-700">Add Drain & Clean</span>
-          <p className="text-xs text-neutral-500 mt-0.5">Spring: $699 · Summer: $299</p>
+          <p className="text-xs text-neutral-500 mt-0.5">Optional — default $299</p>
         </div>
       </label>
+
+      {includeDrainClean && (
+        <div>
+          <label className="form-label">Drain & Clean Price ($)</label>
+          <input
+            type="number"
+            value={drainCleanPrice}
+            onChange={e => setDrainCleanPrice(e.target.value)}
+            min="0"
+            step="1"
+            className="form-input"
+          />
+        </div>
+      )}
+
+      {/* ── Grand total ── */}
+      <div className="rounded-xl bg-brand-50 border border-brand-200 px-4 py-4 flex items-center justify-between">
+        <span className="text-sm font-semibold text-brand-700">Grand Total</span>
+        <span className="text-2xl font-bold text-brand-900">${grandTotal.toFixed(2)}</span>
+      </div>
 
       {/* ── Generate button ── */}
       <button
@@ -397,9 +451,9 @@ export default function LinerQuoteGenerator() {
         className="btn-primary w-full"
       >
         {submitting ? (
-          <><Loader2 className="w-4 h-4 animate-spin" /> Generating Estimates…</>
+          <><Loader2 className="w-4 h-4 animate-spin" /> Generating Estimate…</>
         ) : (
-          <><Sparkles className="w-4 h-4" /> Generate Estimates</>
+          <><Sparkles className="w-4 h-4" /> Generate Estimate</>
         )}
       </button>
 
@@ -427,82 +481,14 @@ export default function LinerQuoteGenerator() {
           <div className="rounded-lg bg-white border border-green-100 px-4 py-3">
             <p className="text-xs text-neutral-400">Client</p>
             <p className="text-sm font-semibold text-neutral-900">{selectedClient?.first_name} {selectedClient?.last_name}</p>
-            <p className="text-xs text-neutral-500 mt-2">Square Footage</p>
-            <p className="text-sm font-semibold text-neutral-900">{sqft} sq. ft.</p>
+            <p className="text-xs text-neutral-500 mt-2">Pool Size</p>
+            <p className="text-sm font-semibold text-neutral-900">{width} × {length} ft ({sqft} sq. ft.)</p>
+            <p className="text-xs text-neutral-500 mt-2">Grand Total</p>
+            <p className="text-lg font-bold text-neutral-900">${grandTotal.toFixed(2)}</p>
           </div>
 
-          {(result.springEstimateNumber || result.springEstimateTotal != null || result.springPdfUrl) && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Spring estimate */}
-              <div className="rounded-lg bg-white border border-neutral-200 px-4 py-3 space-y-2">
-                <div className="flex items-center gap-1.5">
-                  <Waves className="w-3.5 h-3.5 text-brand-500" />
-                  <p className="text-xs font-bold uppercase tracking-wide text-brand-600">Spring Estimate</p>
-                </div>
-                {result.springEstimateNumber && (
-                  <p className="text-xs text-neutral-500">Estimate #{result.springEstimateNumber}</p>
-                )}
-                {result.springEstimateTotal != null && (
-                  <p className="text-lg font-bold text-neutral-900">${Number(result.springEstimateTotal).toFixed(2)}</p>
-                )}
-                {result.springPdfUrl && (
-                  <a
-                    href={result.springPdfUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn-secondary btn-sm w-full mt-1"
-                  >
-                    <Download className="w-3.5 h-3.5" /> Download PDF
-                  </a>
-                )}
-              </div>
-
-              {/* Summer estimate */}
-              <div className="rounded-lg bg-white border border-neutral-200 px-4 py-3 space-y-2">
-                <div className="flex items-center gap-1.5">
-                  <Waves className="w-3.5 h-3.5 text-amber-500" />
-                  <p className="text-xs font-bold uppercase tracking-wide text-amber-600">Summer Estimate</p>
-                </div>
-                {result.summerEstimateNumber && (
-                  <p className="text-xs text-neutral-500">Estimate #{result.summerEstimateNumber}</p>
-                )}
-                {result.summerEstimateTotal != null && (
-                  <p className="text-lg font-bold text-neutral-900">${Number(result.summerEstimateTotal).toFixed(2)}</p>
-                )}
-                {result.summerPdfUrl && (
-                  <a
-                    href={result.summerPdfUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn-secondary btn-sm w-full mt-1"
-                  >
-                    <Download className="w-3.5 h-3.5" /> Download PDF
-                  </a>
-                )}
-              </div>
-            </div>
-          )}
-
-          {result.emailDraftUrl && (
-            <div className="rounded-lg bg-white border border-blue-200 px-4 py-3 flex items-center gap-3">
-              <Mail className="w-4 h-4 text-blue-500 shrink-0" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-neutral-700">Email draft created</p>
-                <p className="text-xs text-neutral-500">Open the draft to review and send it to the client.</p>
-              </div>
-              <a
-                href={result.emailDraftUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-secondary btn-sm shrink-0"
-              >
-                <Mail className="w-3.5 h-3.5" /> Open Draft
-              </a>
-            </div>
-          )}
-
           <p className="text-xs text-neutral-500 text-center">
-            The estimate data has been sent to n8n. Check your n8n workflow and QuickBooks for the generated estimates.
+            The estimate data has been sent to n8n. Check your n8n workflow and QuickBooks for the generated estimate.
           </p>
 
           <button onClick={resetForm} className="btn-secondary w-full">
