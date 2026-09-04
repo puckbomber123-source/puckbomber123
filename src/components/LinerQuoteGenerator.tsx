@@ -165,18 +165,24 @@ export default function LinerQuoteGenerator() {
     };
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-liner-quote`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify(payload),
+      const { error } = await supabase.from('liner_quotes').insert({
+        client_id: selectedClient.id || null,
+        client_name: `${selectedClient.first_name} ${selectedClient.last_name}`.trim(),
+        client_email: selectedClient.email,
+        width: parseFloat(width) || 0,
+        length: parseFloat(length) || 0,
+        square_footage: sqft,
+        language,
+        spring_liner_price: springLiner,
+        spring_replacement_price: springRep,
+        spring_drain_clean_price: includeDrainClean ? 699 : 0,
+        summer_liner_price: summerLiner,
+        summer_replacement_price: summerRep,
+        summer_drain_clean_price: includeDrainClean ? 299 : 0,
+        include_drain_clean: includeDrainClean,
       });
 
-      if (!res.ok) {
-        throw new Error(`Failed to send to n8n (${res.status})`);
-      }
+      if (error) throw error;
 
       setResult({} as N8nResult);
       toast.success('Estimate request sent to n8n');
