@@ -143,27 +143,6 @@ export default function LinerQuoteGenerator() {
     const springLiner = parseFloat(springLinerPrice) || 0;
     const summerLiner = parseFloat(summerLinerPrice) || 0;
 
-    const payload = {
-      clientId: selectedClient.id || '',
-      clientName: `${selectedClient.first_name} ${selectedClient.last_name}`.trim(),
-      clientEmail: selectedClient.email,
-      width: parseFloat(width) || 0,
-      length: parseFloat(length) || 0,
-      squareFootage: sqft,
-      language,
-      spring: {
-        linerPricePerSquareFoot: springLiner,
-        replacementPrice: springRep,
-        drainAndCleanPrice: includeDrainClean ? 699 : 0,
-      },
-      summer: {
-        linerPricePerSquareFoot: summerLiner,
-        replacementPrice: summerRep,
-        drainAndCleanPrice: includeDrainClean ? 299 : 0,
-      },
-      includeDrainAndClean,
-    };
-
     try {
       const { error } = await supabase.from('liner_quotes').insert({
         client_id: selectedClient.id || null,
@@ -184,14 +163,14 @@ export default function LinerQuoteGenerator() {
 
       if (error) throw error;
 
+      setSubmitting(false);
       setResult({} as N8nResult);
       toast.success('Estimate request sent to n8n');
     } catch (err) {
+      setSubmitting(false);
       const msg = err instanceof Error ? err.message : 'Failed to send estimate request';
       setErrorMsg(msg);
       toast.error(msg);
-    } finally {
-      setSubmitting(false);
     }
   };
 
