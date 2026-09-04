@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LogOut, User, Plus, Pencil, Trash2, ArrowLeft, Users, RefreshCw,
   History, UserCheck, X, Waves, Settings2, ToggleLeft, ToggleRight, Eye, EyeOff, ListTodo,
+  Calculator,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { z } from 'zod';
@@ -11,6 +12,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
 import ClientSearch from './ClientSearch';
 import SeasonalCityCalendar from './SeasonalCityCalendar';
+import LinerQuoteGenerator from './LinerQuoteGenerator';
 
 const SUPER_ADMIN_ID = '002';
 
@@ -202,6 +204,17 @@ export default function AdminDashboard() {
                 <span className={`text-xs font-semibold ${link.labelColor} shrink-0`}>{link.label} →</span>
               </button>
             ))}
+          </div>
+        </section>
+
+        {/* Liner Quote Generator */}
+        <section>
+          <div className="mb-3">
+            <p className="section-title mb-0">Liner Quote Generator</p>
+            <p className="text-xs text-neutral-500 mt-1">Generate Spring & Summer liner estimates and send them to n8n for QuickBooks processing.</p>
+          </div>
+          <div className="card card-body">
+            <LinerQuoteGenerator />
           </div>
         </section>
 
