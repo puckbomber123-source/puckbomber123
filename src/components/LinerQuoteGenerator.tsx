@@ -176,16 +176,20 @@ export default function LinerQuoteGenerator() {
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json().catch(() => ({})) as N8nResult;
+      if (!res.ok) {
+        throw new Error(`Webhook returned ${res.status}`);
+      }
 
-      if (!res.ok || data.error) {
-        throw new Error(data.error || `Webhook returned ${res.status}`);
+      const data = (await res.json().catch(() => ({}))) as N8nResult;
+
+      if (data.error) {
+        throw new Error(data.error);
       }
 
       setResult(data);
-      toast.success('Estimates generated successfully');
+      toast.success('Estimate request sent successfully');
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to generate estimates';
+      const msg = err instanceof Error ? err.message : 'Failed to send estimate request';
       setErrorMsg(msg);
       toast.error(msg);
     } finally {
@@ -424,7 +428,7 @@ export default function LinerQuoteGenerator() {
         <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-4 space-y-4">
           <div className="flex items-center gap-2">
             <CheckCircle className="w-5 h-5 text-green-600" />
-            <p className="text-sm font-semibold text-green-800">Estimates Generated Successfully</p>
+            <p className="text-sm font-semibold text-green-800">Estimate Request Sent</p>
           </div>
 
           <div className="rounded-lg bg-white border border-green-100 px-4 py-3">
@@ -434,58 +438,59 @@ export default function LinerQuoteGenerator() {
             <p className="text-sm font-semibold text-neutral-900">{sqft} sq. ft.</p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Spring estimate */}
-            <div className="rounded-lg bg-white border border-neutral-200 px-4 py-3 space-y-2">
-              <div className="flex items-center gap-1.5">
-                <Waves className="w-3.5 h-3.5 text-brand-500" />
-                <p className="text-xs font-bold uppercase tracking-wide text-brand-600">Spring Estimate</p>
+          {(result.springEstimateNumber || result.springEstimateTotal != null || result.springPdfUrl) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Spring estimate */}
+              <div className="rounded-lg bg-white border border-neutral-200 px-4 py-3 space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <Waves className="w-3.5 h-3.5 text-brand-500" />
+                  <p className="text-xs font-bold uppercase tracking-wide text-brand-600">Spring Estimate</p>
+                </div>
+                {result.springEstimateNumber && (
+                  <p className="text-xs text-neutral-500">Estimate #{result.springEstimateNumber}</p>
+                )}
+                {result.springEstimateTotal != null && (
+                  <p className="text-lg font-bold text-neutral-900">${Number(result.springEstimateTotal).toFixed(2)}</p>
+                )}
+                {result.springPdfUrl && (
+                  <a
+                    href={result.springPdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-secondary btn-sm w-full mt-1"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Download PDF
+                  </a>
+                )}
               </div>
-              {result.springEstimateNumber && (
-                <p className="text-xs text-neutral-500">Estimate #{result.springEstimateNumber}</p>
-              )}
-              {result.springEstimateTotal != null && (
-                <p className="text-lg font-bold text-neutral-900">${Number(result.springEstimateTotal).toFixed(2)}</p>
-              )}
-              {result.springPdfUrl && (
-                <a
-                  href={result.springPdfUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-secondary btn-sm w-full mt-1"
-                >
-                  <Download className="w-3.5 h-3.5" /> Download PDF
-                </a>
-              )}
-            </div>
 
-            {/* Summer estimate */}
-            <div className="rounded-lg bg-white border border-neutral-200 px-4 py-3 space-y-2">
-              <div className="flex items-center gap-1.5">
-                <Waves className="w-3.5 h-3.5 text-amber-500" />
-                <p className="text-xs font-bold uppercase tracking-wide text-amber-600">Summer Estimate</p>
+              {/* Summer estimate */}
+              <div className="rounded-lg bg-white border border-neutral-200 px-4 py-3 space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <Waves className="w-3.5 h-3.5 text-amber-500" />
+                  <p className="text-xs font-bold uppercase tracking-wide text-amber-600">Summer Estimate</p>
+                </div>
+                {result.summerEstimateNumber && (
+                  <p className="text-xs text-neutral-500">Estimate #{result.summerEstimateNumber}</p>
+                )}
+                {result.summerEstimateTotal != null && (
+                  <p className="text-lg font-bold text-neutral-900">${Number(result.summerEstimateTotal).toFixed(2)}</p>
+                )}
+                {result.summerPdfUrl && (
+                  <a
+                    href={result.summerPdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-secondary btn-sm w-full mt-1"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Download PDF
+                  </a>
+                )}
               </div>
-              {result.summerEstimateNumber && (
-                <p className="text-xs text-neutral-500">Estimate #{result.summerEstimateNumber}</p>
-              )}
-              {result.summerEstimateTotal != null && (
-                <p className="text-lg font-bold text-neutral-900">${Number(result.summerEstimateTotal).toFixed(2)}</p>
-              )}
-              {result.summerPdfUrl && (
-                <a
-                  href={result.summerPdfUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-secondary btn-sm w-full mt-1"
-                >
-                  <Download className="w-3.5 h-3.5" /> Download PDF
-                </a>
-              )}
             </div>
-          </div>
+          )}
 
-          {/* Email draft confirmation */}
-          {result.emailDraftUrl ? (
+          {result.emailDraftUrl && (
             <div className="rounded-lg bg-white border border-blue-200 px-4 py-3 flex items-center gap-3">
               <Mail className="w-4 h-4 text-blue-500 shrink-0" />
               <div className="flex-1">
@@ -501,12 +506,11 @@ export default function LinerQuoteGenerator() {
                 <Mail className="w-3.5 h-3.5" /> Open Draft
               </a>
             </div>
-          ) : (
-            <div className="flex items-center gap-2 text-sm text-green-700">
-              <CheckCircle className="w-4 h-4" />
-              <span>Email draft created</span>
-            </div>
           )}
+
+          <p className="text-xs text-neutral-500 text-center">
+            The estimate data has been sent to n8n. Check your n8n workflow and QuickBooks for the generated estimates.
+          </p>
 
           <button onClick={resetForm} className="btn-secondary w-full">
             <FileText className="w-4 h-4" /> Generate New Quote
