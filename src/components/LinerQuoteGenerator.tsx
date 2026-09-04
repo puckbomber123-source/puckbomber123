@@ -165,19 +165,18 @@ export default function LinerQuoteGenerator() {
     };
 
     try {
-      const webhookUrl = import.meta.env.VITE_N8N_LINER_QUOTE_WEBHOOK_URL;
-      if (!webhookUrl) {
-        throw new Error('n8n webhook URL is not configured. Set VITE_N8N_LINER_QUOTE_WEBHOOK_URL in the environment.');
-      }
-
-      // Fire-and-forget: send the data to n8n without waiting for a response.
-      // n8n test webhooks hold the connection open, so awaiting would hang forever.
-      fetch(webhookUrl, {
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-liner-quote`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
         body: JSON.stringify(payload),
-        mode: 'no-cors',
-      }).catch(() => {});
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to send to n8n (${res.status})`);
+      }
 
       setResult({} as N8nResult);
       toast.success('Estimate request sent to n8n');
