@@ -303,29 +303,45 @@ export default function BookingRequests() {
   async function sendReminder(booking: Booking) {
     setProcessingId(booking.id);
     try {
-      let clientRow = clientsByEmail[booking.email.toLowerCase()];
-      if (!clientRow) {
-        const { data } = await supabase.from('clients').select(CLIENT_SELECT).eq('email', booking.email.toLowerCase()).maybeSingle<ClientRow>();
-        clientRow = data || undefined;
-      }
-      const firstName = clientRow?.first_name || booking.client_name?.split(' ')[0] || undefined;
-      const { error } = await supabase.functions.invoke('send-booking-reminder', {
-        body: {
-          clientEmail: booking.email,
-          clientName: booking.client_name || booking.email,
-          clientFirstName: firstName,
-          serviceType: booking.service_type,
-          serviceDate: booking.event_date,
-          address: clientRow ? [clientRow.address?.trim(), clientRow.city?.trim(), clientRow.zip?.trim()].filter(Boolean).join(', ') : undefined,
-          poolType: clientRow?.pool_type || undefined,
-          adminNote: booking.custom_note || undefined,
-          balanceDue: booking.balance_due ?? null,
-        },
-      });
-      if (error) throw error;
-      toast.success('Reminder email sent');
+      const now = new Date().toISOString();
+      const { data: newBooking, error: insertError } = await supabase
+        .from('bookings')
+        .insert({
+          email: booking.email,
+          service_type: 'Resendclosing',
+          event_date: booking.event_date,
+          start_time: booking.start_time,
+          end_time: booking.end_time,
+          service_team: booking.service_team,
+          custom_note: booking.custom_note,
+          status: 'approved',
+          requested_by: technician.staff_id || technician.id || technician.name || '',
+          client_name: booking.client_name,
+          approved_by: technician.staff_id || technician.id || technician.name || '',
+          approved_at: now,
+          custom_job_name: booking.custom_job_name || '',
+          pre_book_date: booking.pre_book_date,
+          balance_due: booking.balance_due,
+          closing_add_ons: booking.closing_add_ons,
+          job_status: 'booked',
+          n8n_triggered: true,
+          updated_at: now,
+        })
+        .select('*')
+        .single();
+
+      if (insertError) throw insertError;
+      if (!newBooking) throw new Error('Failed to create resend booking');
+
+      const { error: queueError } = await supabase
+        .from('n8n_booking_queue')
+        .upsert(newBooking, { onConflict: 'id' });
+      if (queueError) throw new Error(queueError.message);
+
+      toast.success('Resend closing sent to n8n');
+      fetchBookings();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to send reminder');
+      toast.error(err instanceof Error ? err.message : 'Failed to send resend closing');
     } finally {
       setProcessingId(null);
     }
@@ -814,7 +830,7 @@ export default function BookingRequests() {
                         {booking.status === 'pending' && (
                           <div className="flex flex-wrap gap-2 pt-2 border-t border-neutral-100">
                             <button onClick={() => approveBooking(booking)} disabled={processing} className="btn-sm bg-green-600 hover:bg-green-700 text-white btn"><CheckCircle2 className="w-3.5 h-3.5" />{processing ? 'Approving…' : 'Approve & Add to Assignments'}</button>
-                            <button onClick={() => sendReminder(booking)} disabled={processing} className="btn-secondary btn-sm"><Bell className="w-3.5 h-3.5" />{processing ? 'Sending…' : 'Send Reminder'}</button>
+                            <button onClick={() => sendReminder(booking)} disabled={processing} className="btn-secondary btn-sm"><Bell className="w-3.5 h-3.5" />{processing ? 'Sending…' : 'Resend Closing'}</button>
                             <button onClick={() => { setEditingId(booking.id); setEditForm({ event_date: booking.event_date, service_type: booking.service_type, custom_note: booking.custom_note || '' }); }} className="btn-secondary btn-sm"><Edit2 className="w-3.5 h-3.5" />Edit</button>
                             <button onClick={() => setRejectingId(booking.id)} className="btn-danger btn-sm"><XCircle className="w-3.5 h-3.5" />Reject</button>
                           </div>
@@ -860,7 +876,7 @@ export default function BookingRequests() {
                           <div className="flex flex-wrap gap-2 pt-2 border-t border-neutral-100">
                             <button onClick={() => navigate(`/team-assignments?date=${booking.event_date}`)} className="btn-secondary btn-sm"><Calendar className="w-3.5 h-3.5" />View in Daily Assignments</button>
                             <button onClick={() => resendConfirmation(booking)} disabled={processing} className="btn-secondary btn-sm"><Mail className="w-3.5 h-3.5" />{processing ? 'Sending…' : 'Resend Confirmation'}</button>
-                            <button onClick={() => sendReminder(booking)} disabled={processing} className="btn-secondary btn-sm"><Bell className="w-3.5 h-3.5" />{processing ? 'Sending…' : 'Send Reminder'}</button>
+                            <button onClick={() => sendReminder(booking)} disabled={processing} className="btn-secondary btn-sm"><Bell className="w-3.5 h-3.5" />{processing ? 'Sending…' : 'Resend Closing'}</button>
                           </div>
                         )}
                       </div>
