@@ -448,6 +448,7 @@ function VisitHistory({ clientEmail }: { clientEmail: string }) {
           .from('bookings')
           .select('id,email,client_name,service_type,event_date,start_time,service_team,custom_note,custom_job_name,status,requested_by,rejection_reason,pre_book_date,balance_due,closing_add_ons,created_at')
           .eq('email', clientEmail)
+          .neq('status', 'hidden')
           .order('event_date', { ascending: false }),
       ]);
       if (reportsRes.error) { toast.error('Failed to load visit history'); setReports([]); }

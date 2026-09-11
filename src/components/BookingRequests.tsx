@@ -172,7 +172,7 @@ export default function BookingRequests() {
 
   const fetchBookings = useCallback(async () => {
     setLoading(true);
-    let q = supabase.from('bookings').select('*').order(sortBy, { ascending: sortDir === 'asc' });
+    let q = supabase.from('bookings').select('*').neq('status', 'hidden').order(sortBy, { ascending: sortDir === 'asc' });
     if (filterStatus !== 'all') q = q.eq('status', filterStatus);
     const { data, error } = await q;
     if (error) { toast.error('Failed to load requests'); setBookings([]); }
@@ -304,8 +304,8 @@ export default function BookingRequests() {
     setProcessingId(booking.id);
     try {
       const now = new Date().toISOString();
-      const { error: queueError } = await supabase
-        .from('n8n_booking_queue')
+      const { error: insertError } = await supabase
+        .from('bookings')
         .insert({
           email: booking.email,
           service_type: 'Resendclosing',
@@ -314,21 +314,21 @@ export default function BookingRequests() {
           end_time: booking.end_time,
           service_team: booking.service_team,
           custom_note: booking.custom_note,
-          status: 'approved',
+          status: 'hidden',
           requested_by: technician.staff_id || technician.id || technician.name || '',
           client_name: booking.client_name,
-          approved_by: technician.staff_id || technician.id || technician.name || '',
+          approved_by: '',
           approved_at: now,
           custom_job_name: booking.custom_job_name || '',
           pre_book_date: booking.pre_book_date,
           balance_due: booking.balance_due,
           closing_add_ons: booking.closing_add_ons,
-          job_status: 'booked',
+          job_status: 'hidden',
           n8n_triggered: true,
           updated_at: now,
         });
 
-      if (queueError) throw new Error(queueError.message);
+      if (insertError) throw new Error(insertError.message);
 
       toast.success('Resend closing sent to n8n');
     } catch (err) {

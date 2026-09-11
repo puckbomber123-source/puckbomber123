@@ -96,6 +96,7 @@ export default function InvoiceMonitor() {
     const { data: bookingData, error: bkError } = await supabase
       .from('bookings')
       .select('id,client_name,email,service_type,event_date,status,job_status,custom_note,custom_job_name,balance_due,assignment_id')
+      .neq('status', 'hidden')
       .order('event_date', { ascending: true });
 
     if (bkError) { toast.error('Failed to load jobs'); setJobs([]); setLoading(false); return; }
