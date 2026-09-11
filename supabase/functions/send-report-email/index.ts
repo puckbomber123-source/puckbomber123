@@ -58,6 +58,8 @@ interface ReportDraft {
   finalInspection: string[];
   cementPool: string[];
   swimReadyChecklist?: Record<string, string[]>;
+  closingChecklist?: string[];
+  closingChecklistAll?: string[];
   [key: string]: unknown;
 }
 
@@ -393,13 +395,6 @@ function photoBlock(url: string, label: string): string {
   </div>`;
 }
 
-// Payment instructions block placed at top of all service report emails
-const PAYMENT_BLOCK = `
-  <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:12px;padding:16px 20px;margin-bottom:24px;">
-    <p style="font-size:13px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 6px;">Payment Instructions</p>
-    <p style="margin:0;font-size:14px;color:#15803D;line-height:1.6;">Payment is by <strong>e-transfer only</strong> to <strong>depot@novopiscines.ca</strong></p>
-  </div>`;
-
 function buildSwimReadyNextStepsBlock(poolType?: string): string {
   const link = getSwimReadyLink(poolType);
   return `
@@ -438,6 +433,140 @@ function buildTechDisplay(payload: EmailPayload, forClient: boolean): string {
   return names.join(', '); // admin sees full names
 }
 
+function buildClosingChecklistHtml(allItems: string[], doneItems: string[], forClient: boolean): string {
+  if (!allItems || allItems.length === 0) return '';
+  const done = new Set(doneItems || []);
+  const rows = allItems.map(item => {
+    const isDone = done.has(item);
+    if (forClient) {
+      return `<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #F3F4F6;">
+        <span style="flex-shrink:0;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;${isDone ? 'background:#DCFCE7;color:#16A34A;' : 'background:#FEE2E2;color:#DC2626;'}">${isDone ? '&#10003;' : '&#10007;'}</span>
+        <span style="font-size:13px;color:${isDone ? '#374151' : '#6B7280'};line-height:1.5;${isDone ? '' : 'text-decoration:line-through;opacity:0.7;'}">${item}</span>
+      </div>`;
+    }
+    return `<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #F3F4F6;">
+      <span style="flex-shrink:0;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;${isDone ? 'background:#DCFCE7;color:#16A34A;' : 'background:#FEE2E2;color:#DC2626;'}">${isDone ? '&#10003;' : '&#10007;'}</span>
+      <span style="font-size:13px;color:${isDone ? '#374151' : '#6B7280'};line-height:1.5;${isDone ? '' : 'text-decoration:line-through;opacity:0.7;'}">${item}</span>
+    </div>`;
+  }).join('');
+  return `<div style="background:#F9FAFB;border-radius:12px;padding:16px 20px;margin-bottom:24px;">${rows}</div>`;
+}
+
+const REVIEW_BLOCK = `
+  <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:12px;padding:24px;margin-top:24px;">
+    <h2 style="font-size:16px;font-weight:700;color:#1E40AF;margin:0 0 10px;">Are you happy with this report?</h2>
+    <p style="margin:0 0 14px;font-size:14px;color:#374151;line-height:1.6;">
+      If you have a minute, a Google review means the world to us. It helps other pool owners find us, and it directly supports our technicians — they earn a performance bonus of up to $300 based on client feedback, so your kind words really do make a difference for the person who just closed your pool.
+    </p>
+    <a href="https://www.google.com/search?q=Piscines+Novo+reviews" style="display:inline-block;background:#1D4ED8;color:white;font-size:14px;font-weight:600;padding:12px 28px;border-radius:8px;text-decoration:none;">
+      Share your experience on Google &rarr;
+    </a>
+  </div>`;
+
+function buildClosingClientHtml(payload: EmailPayload): string {
+  const { client, draft, photoUrls, reportId } = payload;
+  if (!draft || !photoUrls) return '';
+  const clientFirst = client?.first_name || 'there';
+  const clientName = client ? `${client.first_name || ''} ${client.last_name || ''}`.trim() : 'Client';
+  const now = new Date().toLocaleString('en-CA', { timeZone: 'America/Toronto', dateStyle: 'full', timeStyle: 'short' });
+
+  const techDisplay = buildTechDisplay(payload, true);
+  const techFirstName = techDisplay ? techDisplay.split(' ')[0] : 'your technician';
+
+  const closingAll = (draft.closingChecklistAll as string[]) || [];
+  const closingDone = (draft.closingChecklist as string[]) || [];
+
+  const addOns = (draft.closingAddOns as string[]) || [];
+  const qtyParts: string[] = [];
+  if (addOns.includes('Return Plug') && draft.returnPlugQty) qtyParts.push(`Return Plugs: ${draft.returnPlugQty}`);
+  if (addOns.includes('Gizmo') && draft.gizmoQty) qtyParts.push(`Gizmos: ${draft.gizmoQty}`);
+  if (addOns.includes('Yellow Cover Picks') && draft.yellowCoverPicksQty) qtyParts.push(`Yellow Cover Picks: ${draft.yellowCoverPicksQty}`);
+
+  const notesHtml = draft.technicianNotes
+    ? `<div style="background:#FEF3C7;border-left:4px solid #F59E0B;border-radius:0 8px 8px 0;padding:14px 16px;margin-bottom:24px;">
+        <p style="margin:0;font-size:14px;color:#92400E;line-height:1.6;">${(draft.technicianNotes as string).replace(/\n/g, '<br/>')}</p>
+      </div>`
+    : '';
+
+  const photoSection = (photoUrls.areaUrl || photoUrls.equipUrl || photoUrls.extraUrl || photoUrls.removedPartsUrl)
+    ? `<div style="margin-bottom:24px;">
+        <h2 style="font-size:16px;font-weight:700;color:#374151;margin:0 0 16px;">Photos from your closing</h2>
+        ${photoBlock(photoUrls.areaUrl, 'Pool Area')}
+        ${photoBlock(photoUrls.equipUrl, 'Pool Equipment')}
+        ${photoBlock(photoUrls.extraUrl, 'Extra')}
+        ${photoBlock(photoUrls.removedPartsUrl || '', 'Removed Parts & Storage')}
+      </div>`
+    : '';
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Pool Closing Report — ${clientName}</title></head>
+<body style="margin:0;padding:0;background:#F3F4F6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <div style="max-width:600px;margin:24px auto;background:white;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+    <div style="background:#0F766E;padding:28px 32px;">
+      <h1 style="color:white;margin:0;font-size:22px;font-weight:700;">Pool Closing Report</h1>
+      <p style="color:#99F6E4;margin:8px 0 0;font-size:14px;">${now}</p>
+    </div>
+    <div style="padding:28px 32px;">
+      <p style="font-size:16px;color:#374151;line-height:1.7;margin:0 0 20px;">
+        Hi ${clientFirst},<br/><br/>
+        ${techFirstName} here. I just finished closing your pool for the season and wanted to walk you through everything I did today. Here's a detailed summary of the work completed at your property on ${draft.serviceDate}.
+      </p>
+
+      <div style="background:#F9FAFB;border-radius:12px;padding:20px;margin-bottom:24px;">
+        <table style="width:100%;border-collapse:collapse;">
+          <tr><td style="padding:4px 0;color:#6B7280;font-size:13px;width:40%;">Client</td><td style="font-size:13px;font-weight:600;color:#111827;">${clientName}</td></tr>
+          <tr><td style="padding:4px 0;color:#6B7280;font-size:13px;">Address</td><td style="font-size:13px;color:#111827;">${client?.address || '—'}${client?.city ? ', ' + client.city : ''}</td></tr>
+          <tr><td style="padding:4px 0;color:#6B7280;font-size:13px;">Pool Type</td><td style="font-size:13px;color:#111827;">${client?.pool_type || '—'}</td></tr>
+          <tr><td style="padding:4px 0;color:#6B7280;font-size:13px;">Service Date</td><td style="font-size:13px;font-weight:600;color:#111827;">${draft.serviceDate}</td></tr>
+          <tr><td style="padding:4px 0;color:#6B7280;font-size:13px;">Technician(s)</td><td style="font-size:13px;color:#111827;">${techDisplay}</td></tr>
+          ${draft.completedTime ? `<tr><td style="padding:4px 0;color:#6B7280;font-size:13px;">Completed At</td><td style="font-size:13px;font-weight:600;color:#0F766E;">${draft.completedTime}</td></tr>` : ''}
+        </table>
+      </div>
+
+      ${closingAll.length > 0 ? `
+      <h2 style="font-size:16px;font-weight:700;color:#374151;margin:0 0 8px;">What was done today</h2>
+      <p style="font-size:13px;color:#6B7280;margin:0 0 12px;">Here's the full closing checklist. Items marked with a green check were completed, and any items that weren't done are clearly marked.</p>
+      ${buildClosingChecklistHtml(closingAll, closingDone, true)}
+      ` : ''}
+
+      ${addOns.length > 0 ? `
+      <h2 style="font-size:16px;font-weight:700;color:#374151;margin:0 0 12px;">Add-ons completed</h2>
+      <div style="margin-bottom:24px;">
+        ${addOns.map((a: string) => `<span style="display:inline-block;background:#EFF6FF;color:#1D4ED8;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;margin:3px;">${a}</span>`).join('')}
+        ${qtyParts.length > 0 ? `<p style="margin:10px 0 0;font-size:13px;color:#374151;font-weight:600;">${qtyParts.join(' · ')}</p>` : ''}
+      </div>
+      ` : ''}
+
+      ${photoUrls.removedPartsUrl ? `
+      <h2 style="font-size:16px;font-weight:700;color:#374151;margin:0 0 8px;">Removed parts & storage</h2>
+      <p style="font-size:13px;color:#6B7280;margin:0 0 12px;">Here's where your removed parts were stored for the winter:</p>
+      ${photoBlock(photoUrls.removedPartsUrl, 'Removed Parts / Storage')}
+      ` : ''}
+
+      ${notesHtml}
+
+      ${photoSection}
+
+      <div style="background:#F0FDFA;border:1px solid #99F6E4;border-radius:12px;padding:20px;margin-bottom:24px;">
+        <h2 style="font-size:15px;font-weight:700;color:#0F766E;margin:0 0 8px;">Questions about your closing?</h2>
+        <p style="margin:0;font-size:14px;color:#374151;line-height:1.6;">
+          If you usually do something differently, or if you have any questions about anything in this report, just reply to this email and we'll be happy to help.
+        </p>
+      </div>
+
+      ${REVIEW_BLOCK}
+    </div>
+    <div style="background:#F9FAFB;border-top:1px solid #E5E7EB;padding:20px 32px;text-align:center;">
+      <p style="color:#9CA3AF;font-size:12px;margin:0;">Piscines Novo — Pool Service</p>
+      <p style="color:#9CA3AF;font-size:11px;margin:6px 0 0;">Report ID: ${reportId || ''}</p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
 function buildReportHtml(payload: EmailPayload, forClient = false): string {
   const { client, draft, photoUrls, reportId } = payload;
   if (!draft || !photoUrls) return '';
@@ -474,7 +603,6 @@ function buildReportHtml(payload: EmailPayload, forClient = false): string {
       <p style="color:#93C5FD;margin:6px 0 0;font-size:13px;">${now}</p>
     </div>
     <div style="padding:28px 32px;">
-      ${PAYMENT_BLOCK}
       ${invoiceBlock}
       ${isSwimReady1stVisit ? buildSwimReadyNextStepsBlock(client?.pool_type) : ''}
       <div style="background:#F9FAFB;border-radius:12px;padding:20px;margin-bottom:24px;">
@@ -507,6 +635,7 @@ function buildReportHtml(payload: EmailPayload, forClient = false): string {
         return `<div style="margin-bottom:24px;"><h2 style="font-size:14px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 12px;">Pool Closing Add-ons</h2>${addOns.map((a: string) => `<span style="display:inline-block;background:#EFF6FF;color:#1D4ED8;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;margin:3px;">${a}</span>`).join('')}${qtyRow}</div>`;
       })()}
       ${draft.serviceType === 'Pool Opening' && draft.openingType === 'Swim Ready' && draft.swimReadyChecklist ? `<div style="margin-bottom:24px;"><h2 style="font-size:14px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 16px;">Swim-Ready Checklist</h2>${swimReadyChecklistHtml(draft.swimReadyChecklist as Record<string, string[]>)}</div>` : ''}
+      ${draft.serviceType === 'Pool Closing' && draft.closingChecklistAll && (draft.closingChecklistAll as string[]).length > 0 ? `<div style="margin-bottom:24px;"><h2 style="font-size:14px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 12px;">Closing Checklist (Done / Not Done)</h2>${buildClosingChecklistHtml(draft.closingChecklistAll as string[], (draft.closingChecklist as string[]) || [], false)}</div>` : ''}
       ${draft.technicianNotes ? `<div style="margin-bottom:24px;"><h2 style="font-size:14px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 12px;">Technician Notes</h2><div style="background:#FEF3C7;border-left:4px solid #F59E0B;border-radius:0 8px 8px 0;padding:14px 16px;"><p style="margin:0;font-size:13px;color:#92400E;line-height:1.5;">${(draft.technicianNotes as string).replace(/\n/g, '<br/>')}</p></div></div>` : ''}
       ${(!draft.swimReadyChecklist || draft.serviceType !== 'Pool Opening' || draft.openingType !== 'Swim Ready') && draft.finalInspection?.length ? `<div style="margin-bottom:24px;"><h2 style="font-size:14px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 12px;">Final Inspection</h2>${chipListHtml(draft.finalInspection as string[])}</div>` : ''}
       ${(!draft.swimReadyChecklist || draft.serviceType !== 'Pool Opening' || draft.openingType !== 'Swim Ready') && draft.marketing?.length ? `<div style="margin-bottom:24px;"><h2 style="font-size:14px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 12px;">Client Follow-Up</h2>${chipListHtml(draft.marketing as string[])}</div>` : ''}
@@ -563,15 +692,19 @@ Deno.serve(async (req: Request) => {
       // Service report
       const { client, draft } = payload;
       const clientName = client ? `${client.first_name || ''} ${client.last_name || ''}`.trim() : 'Client';
-      const subject = `Piscines Novo — Service Report — ${clientName} — ${draft?.serviceDate}`;
+      const isClosing = draft?.serviceType === 'Pool Closing';
+      const subject = isClosing
+        ? `Piscines Novo — Pool Closing Report — ${clientName} — ${draft?.serviceDate}`
+        : `Piscines Novo — Service Report — ${clientName} — ${draft?.serviceDate}`;
 
       // Admin always gets the internal copy (full name, cash, phone, email)
       await sendEmail(RESEND_KEY, { to: [ADMIN_EMAIL], subject, html: buildReportHtml(payload, false) });
 
-      // Client gets a separate copy with techStaffId only, no cash/contact details — CC services so the office sees it too
+      // Client gets a separate copy — personalized closing email for Pool Closing, standard for everything else
       const clientEmail = client?.email?.trim();
       if (clientEmail && clientEmail !== ADMIN_EMAIL) {
-        await sendEmail(RESEND_KEY, { to: [clientEmail], subject, html: buildReportHtml(payload, true), cc: ["services@novopiscines.ca"] });
+        const clientHtml = isClosing ? buildClosingClientHtml(payload) : buildReportHtml(payload, true);
+        await sendEmail(RESEND_KEY, { to: [clientEmail], subject, html: clientHtml, cc: ["services@novopiscines.ca"] });
       }
     }
 

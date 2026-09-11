@@ -1228,6 +1228,7 @@ export default function SubmitReport() {
           ...draft,
           technicianNotes: buildTechnicianNotes(draft),
           leadTechnician: draft.leadTechnician,
+          closingChecklistAll: draft.serviceType === 'Pool Closing' ? getClosingChecklist(effectivePoolType) : [],
         },
         techName: draft.leadTechnician,
         techStaffId: tech.staff_id || tech.id || '',
