@@ -304,8 +304,8 @@ export default function BookingRequests() {
     setProcessingId(booking.id);
     try {
       const now = new Date().toISOString();
-      const { data: newBooking, error: insertError } = await supabase
-        .from('bookings')
+      const { error: queueError } = await supabase
+        .from('n8n_booking_queue')
         .insert({
           email: booking.email,
           service_type: 'Resendclosing',
@@ -326,20 +326,11 @@ export default function BookingRequests() {
           job_status: 'booked',
           n8n_triggered: true,
           updated_at: now,
-        })
-        .select('*')
-        .single();
+        });
 
-      if (insertError) throw insertError;
-      if (!newBooking) throw new Error('Failed to create resend booking');
-
-      const { error: queueError } = await supabase
-        .from('n8n_booking_queue')
-        .upsert(newBooking, { onConflict: 'id' });
       if (queueError) throw new Error(queueError.message);
 
       toast.success('Resend closing sent to n8n');
-      fetchBookings();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to send resend closing');
     } finally {
