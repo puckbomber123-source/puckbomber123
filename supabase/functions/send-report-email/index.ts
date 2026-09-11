@@ -452,16 +452,48 @@ function buildClosingChecklistHtml(allItems: string[], doneItems: string[], forC
   return `<div style="background:#F9FAFB;border-radius:12px;padding:16px 20px;margin-bottom:24px;">${rows}</div>`;
 }
 
-const REVIEW_BLOCK = `
+const REVIEW_LINK = "https://g.page/r/CdFTMUDvEQ1EEAE/review";
+
+function buildReviewBlockEn(techFirstName: string): string {
+  return `
   <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:12px;padding:24px;margin-top:24px;">
-    <h2 style="font-size:16px;font-weight:700;color:#1E40AF;margin:0 0 10px;">Are you happy with this report?</h2>
+    <h2 style="font-size:16px;font-weight:700;color:#1E40AF;margin:0 0 10px;">Are you happy with my work?</h2>
     <p style="margin:0 0 14px;font-size:14px;color:#374151;line-height:1.6;">
-      If you have a minute, a Google review means the world to us. It helps other pool owners find us, and it directly supports our technicians — they earn a performance bonus of up to $300 based on client feedback, so your kind words really do make a difference for the person who just closed your pool.
+      Hi, ${techFirstName} here again. If you have a minute, leaving a quick Google review really means a lot to me. It helps other pool owners find Piscines Novo, and it directly supports me — our technicians can earn performance bonuses of up to $300 per customer based on client feedback. Your kind words truly make a difference for the person who just closed your pool.
     </p>
-    <a href="https://www.google.com/search?q=Piscines+Novo+reviews" style="display:inline-block;background:#1D4ED8;color:white;font-size:14px;font-weight:600;padding:12px 28px;border-radius:8px;text-decoration:none;">
+    <a href="${REVIEW_LINK}" style="display:inline-block;background:#1D4ED8;color:white;font-size:14px;font-weight:600;padding:12px 28px;border-radius:8px;text-decoration:none;">
       Share your experience on Google &rarr;
     </a>
   </div>`;
+}
+
+function buildReviewBlockFr(techFirstName: string): string {
+  return `
+  <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:12px;padding:24px;margin-top:24px;">
+    <h2 style="font-size:16px;font-weight:700;color:#1E40AF;margin:0 0 10px;">Êtes-vous satisfait de mon travail ?</h2>
+    <p style="margin:0 0 14px;font-size:14px;color:#374151;line-height:1.6;">
+      Salut, c'est ${techFirstName} encore. Si vous avez une minute, laisser un petit avis Google veut vraiment dire beaucoup pour moi. Ça aide d'autres propriétaires de piscines à trouver Piscines Novo, et ça me soutient directement — nos techniciens peuvent gagner des bonis de performance allant jusqu'à 300 $ par client selon les commentaires des clients. Vos mots gentils font vraiment une différence pour la personne qui vient de fermer votre piscine.
+    </p>
+    <a href="${REVIEW_LINK}" style="display:inline-block;background:#1D4ED8;color:white;font-size:14px;font-weight:600;padding:12px 28px;border-radius:8px;text-decoration:none;">
+      Partagez votre expérience sur Google &rarr;
+    </a>
+  </div>`;
+}
+
+function buildAddOnsBlock(addOns: string[], qtyParts: string[]): string {
+  if (addOns.length === 0) return '';
+  return `<div style="margin-bottom:24px;">
+    ${addOns.map((a: string) => `<span style="display:inline-block;background:#EFF6FF;color:#1D4ED8;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;margin:3px;">${a}</span>`).join('')}
+    ${qtyParts.length > 0 ? `<p style="margin:10px 0 0;font-size:13px;color:#374151;font-weight:600;">${qtyParts.join(' · ')}</p>` : ''}
+  </div>`;
+}
+
+function buildNotesBlock(notes: string, fontSize: string): string {
+  if (!notes) return '';
+  return `<div style="background:#FEF3C7;border-left:4px solid #F59E0B;border-radius:0 8px 8px 0;padding:14px 16px;margin-bottom:24px;">
+    <p style="margin:0;font-size:${fontSize};color:#92400E;line-height:1.6;">${notes.replace(/\n/g, '<br/>')}</p>
+  </div>`;
+}
 
 function buildClosingClientHtml(payload: EmailPayload): string {
   const { client, draft, photoUrls, reportId } = payload;
@@ -481,12 +513,6 @@ function buildClosingClientHtml(payload: EmailPayload): string {
   if (addOns.includes('Return Plug') && draft.returnPlugQty) qtyParts.push(`Return Plugs: ${draft.returnPlugQty}`);
   if (addOns.includes('Gizmo') && draft.gizmoQty) qtyParts.push(`Gizmos: ${draft.gizmoQty}`);
   if (addOns.includes('Yellow Cover Picks') && draft.yellowCoverPicksQty) qtyParts.push(`Yellow Cover Picks: ${draft.yellowCoverPicksQty}`);
-
-  const notesHtml = draft.technicianNotes
-    ? `<div style="background:#FEF3C7;border-left:4px solid #F59E0B;border-radius:0 8px 8px 0;padding:14px 16px;margin-bottom:24px;">
-        <p style="margin:0;font-size:14px;color:#92400E;line-height:1.6;">${(draft.technicianNotes as string).replace(/\n/g, '<br/>')}</p>
-      </div>`
-    : '';
 
   const photoSection = (photoUrls.areaUrl || photoUrls.equipUrl || photoUrls.extraUrl || photoUrls.removedPartsUrl)
     ? `<div style="margin-bottom:24px;">
@@ -525,18 +551,14 @@ function buildClosingClientHtml(payload: EmailPayload): string {
         </table>
       </div>
 
+      ${addOns.length > 0 ? `<h2 style="font-size:16px;font-weight:700;color:#374151;margin:0 0 12px;">Add-ons completed</h2>${buildAddOnsBlock(addOns, qtyParts)}` : ''}
+
+      ${draft.technicianNotes ? `<h2 style="font-size:16px;font-weight:700;color:#374151;margin:0 0 12px;">Notes from ${techFirstName}</h2>${buildNotesBlock(draft.technicianNotes as string, '14px')}` : ''}
+
       ${closingAll.length > 0 ? `
       <h2 style="font-size:16px;font-weight:700;color:#374151;margin:0 0 8px;">What was done today</h2>
       <p style="font-size:13px;color:#6B7280;margin:0 0 12px;">Here's the full closing checklist. Items marked with a green check were completed, and any items that weren't done are clearly marked.</p>
       ${buildClosingChecklistHtml(closingAll, closingDone, true)}
-      ` : ''}
-
-      ${addOns.length > 0 ? `
-      <h2 style="font-size:16px;font-weight:700;color:#374151;margin:0 0 12px;">Add-ons completed</h2>
-      <div style="margin-bottom:24px;">
-        ${addOns.map((a: string) => `<span style="display:inline-block;background:#EFF6FF;color:#1D4ED8;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;margin:3px;">${a}</span>`).join('')}
-        ${qtyParts.length > 0 ? `<p style="margin:10px 0 0;font-size:13px;color:#374151;font-weight:600;">${qtyParts.join(' · ')}</p>` : ''}
-      </div>
       ` : ''}
 
       ${photoUrls.removedPartsUrl ? `
@@ -544,8 +566,6 @@ function buildClosingClientHtml(payload: EmailPayload): string {
       <p style="font-size:13px;color:#6B7280;margin:0 0 12px;">Here's where your removed parts were stored for the winter:</p>
       ${photoBlock(photoUrls.removedPartsUrl, 'Removed Parts / Storage')}
       ` : ''}
-
-      ${notesHtml}
 
       ${photoSection}
 
@@ -556,10 +576,102 @@ function buildClosingClientHtml(payload: EmailPayload): string {
         </p>
       </div>
 
-      ${REVIEW_BLOCK}
+      ${buildReviewBlockEn(techFirstName)}
     </div>
     <div style="background:#F9FAFB;border-top:1px solid #E5E7EB;padding:20px 32px;text-align:center;">
       <p style="color:#9CA3AF;font-size:12px;margin:0;">Piscines Novo — Pool Service</p>
+      <p style="color:#9CA3AF;font-size:11px;margin:6px 0 0;">Report ID: ${reportId || ''}</p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+function buildClosingClientHtmlFr(payload: EmailPayload): string {
+  const { client, draft, photoUrls, reportId } = payload;
+  if (!draft || !photoUrls) return '';
+  const clientFirst = client?.first_name || '';
+  const clientName = client ? `${client.first_name || ''} ${client.last_name || ''}`.trim() : 'Client';
+  const now = new Date().toLocaleString('fr-CA', { timeZone: 'America/Toronto', dateStyle: 'full', timeStyle: 'short' });
+
+  const techDisplay = buildTechDisplay(payload, true);
+  const techFirstName = techDisplay ? techDisplay.split(' ')[0] : 'votre technicien';
+
+  const closingAll = (draft.closingChecklistAll as string[]) || [];
+  const closingDone = (draft.closingChecklist as string[]) || [];
+
+  const addOns = (draft.closingAddOns as string[]) || [];
+  const qtyParts: string[] = [];
+  if (addOns.includes('Return Plug') && draft.returnPlugQty) qtyParts.push(`Bouchons de retour: ${draft.returnPlugQty}`);
+  if (addOns.includes('Gizmo') && draft.gizmoQty) qtyParts.push(`Gizmos: ${draft.gizmoQty}`);
+  if (addOns.includes('Yellow Cover Picks') && draft.yellowCoverPicksQty) qtyParts.push(`Piquets de couverture jaune: ${draft.yellowCoverPicksQty}`);
+
+  const photoSection = (photoUrls.areaUrl || photoUrls.equipUrl || photoUrls.extraUrl || photoUrls.removedPartsUrl)
+    ? `<div style="margin-bottom:24px;">
+        <h2 style="font-size:16px;font-weight:700;color:#374151;margin:0 0 16px;">Photos de votre fermeture</h2>
+        ${photoBlock(photoUrls.areaUrl, 'Zone de la piscine')}
+        ${photoBlock(photoUrls.equipUrl, 'Équipement de la piscine')}
+        ${photoBlock(photoUrls.extraUrl, 'Supplémentaire')}
+        ${photoBlock(photoUrls.removedPartsUrl || '', 'Pièces retirées et entreposage')}
+      </div>`
+    : '';
+
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Rapport de fermeture — ${clientName}</title></head>
+<body style="margin:0;padding:0;background:#F3F4F6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <div style="max-width:600px;margin:24px auto;background:white;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+    <div style="background:#0F766E;padding:28px 32px;">
+      <h1 style="color:white;margin:0;font-size:22px;font-weight:700;">Rapport de fermeture de piscine</h1>
+      <p style="color:#99F6E4;margin:8px 0 0;font-size:14px;">${now}</p>
+    </div>
+    <div style="padding:28px 32px;">
+      <p style="font-size:16px;color:#374151;line-height:1.7;margin:0 0 20px;">
+        Bonjour ${clientFirst},<br/><br/>
+        C'est ${techFirstName}. Je viens de terminer la fermeture de votre piscine pour la saison et je voulais vous expliquer tout ce que j'ai fait aujourd'hui. Voici un résumé détaillé des travaux effectués à votre propriété le ${draft.serviceDate}.
+      </p>
+
+      <div style="background:#F9FAFB;border-radius:12px;padding:20px;margin-bottom:24px;">
+        <table style="width:100%;border-collapse:collapse;">
+          <tr><td style="padding:4px 0;color:#6B7280;font-size:13px;width:40%;">Client</td><td style="font-size:13px;font-weight:600;color:#111827;">${clientName}</td></tr>
+          <tr><td style="padding:4px 0;color:#6B7280;font-size:13px;">Adresse</td><td style="font-size:13px;color:#111827;">${client?.address || '—'}${client?.city ? ', ' + client.city : ''}</td></tr>
+          <tr><td style="padding:4px 0;color:#6B7280;font-size:13px;">Type de piscine</td><td style="font-size:13px;color:#111827;">${client?.pool_type || '—'}</td></tr>
+          <tr><td style="padding:4px 0;color:#6B7280;font-size:13px;">Date du service</td><td style="font-size:13px;font-weight:600;color:#111827;">${draft.serviceDate}</td></tr>
+          <tr><td style="padding:4px 0;color:#6B7280;font-size:13px;">Technicien(s)</td><td style="font-size:13px;color:#111827;">${techDisplay}</td></tr>
+          ${draft.completedTime ? `<tr><td style="padding:4px 0;color:#6B7280;font-size:13px;">Terminé à</td><td style="font-size:13px;font-weight:600;color:#0F766E;">${draft.completedTime}</td></tr>` : ''}
+        </table>
+      </div>
+
+      ${addOns.length > 0 ? `<h2 style="font-size:16px;font-weight:700;color:#374151;margin:0 0 12px;">Options complétées</h2>${buildAddOnsBlock(addOns, qtyParts)}` : ''}
+
+      ${draft.technicianNotes ? `<h2 style="font-size:16px;font-weight:700;color:#374151;margin:0 0 12px;">Notes de ${techFirstName}</h2>${buildNotesBlock(draft.technicianNotes as string, '14px')}` : ''}
+
+      ${closingAll.length > 0 ? `
+      <h2 style="font-size:16px;font-weight:700;color:#374151;margin:0 0 8px;">Ce qui a été fait aujourd'hui</h2>
+      <p style="font-size:13px;color:#6B7280;margin:0 0 12px;">Voici la liste de fermeture complète. Les éléments marqués d'une coche verte ont été complétés, et ceux qui n'ont pas été faits sont clairement indiqués.</p>
+      ${buildClosingChecklistHtml(closingAll, closingDone, true)}
+      ` : ''}
+
+      ${photoUrls.removedPartsUrl ? `
+      <h2 style="font-size:16px;font-weight:700;color:#374151;margin:0 0 8px;">Pièces retirées et entreposage</h2>
+      <p style="font-size:13px;color:#6B7280;margin:0 0 12px;">Voici où vos pièces retirées ont été entreposées pour l'hiver :</p>
+      ${photoBlock(photoUrls.removedPartsUrl, 'Pièces retirées et entreposage')}
+      ` : ''}
+
+      ${photoSection}
+
+      <div style="background:#F0FDFA;border:1px solid #99F6E4;border-radius:12px;padding:20px;margin-bottom:24px;">
+        <h2 style="font-size:15px;font-weight:700;color:#0F766E;margin:0 0 8px;">Questions sur votre fermeture ?</h2>
+        <p style="margin:0;font-size:14px;color:#374151;line-height:1.6;">
+          Si vous faites habituellement les choses différemment, ou si vous avez des questions sur quoi que ce soit dans ce rapport, répondez simplement à ce courriel et nous serons heureux de vous aider.
+        </p>
+      </div>
+
+      ${buildReviewBlockFr(techFirstName)}
+    </div>
+    <div style="background:#F9FAFB;border-top:1px solid #E5E7EB;padding:20px 32px;text-align:center;">
+      <p style="color:#9CA3AF;font-size:12px;margin:0;">Piscines Novo — Service de piscine</p>
       <p style="color:#9CA3AF;font-size:11px;margin:6px 0 0;">Report ID: ${reportId || ''}</p>
     </div>
   </div>
@@ -696,15 +808,22 @@ Deno.serve(async (req: Request) => {
       const subject = isClosing
         ? `Piscines Novo — Pool Closing Report — ${clientName} — ${draft?.serviceDate}`
         : `Piscines Novo — Service Report — ${clientName} — ${draft?.serviceDate}`;
+      const subjectFr = `Piscines Novo — Rapport de fermeture — ${clientName} — ${draft?.serviceDate}`;
 
-      // Admin always gets the internal copy (full name, cash, phone, email)
-      await sendEmail(RESEND_KEY, { to: [ADMIN_EMAIL], subject, html: buildReportHtml(payload, false) });
-
-      // Client gets a separate copy — personalized closing email for Pool Closing, standard for everything else
       const clientEmail = client?.email?.trim();
-      if (clientEmail && clientEmail !== ADMIN_EMAIL) {
-        const clientHtml = isClosing ? buildClosingClientHtml(payload) : buildReportHtml(payload, true);
-        await sendEmail(RESEND_KEY, { to: [clientEmail], subject, html: clientHtml, cc: ["services@novopiscines.ca"] });
+
+      if (isClosing) {
+        // Pool Closing: send only to client (EN + FR), CC services — no admin copy
+        if (clientEmail && clientEmail !== ADMIN_EMAIL) {
+          await sendEmail(RESEND_KEY, { to: [clientEmail], subject, html: buildClosingClientHtml(payload), cc: ["services@novopiscines.ca"] });
+          await sendEmail(RESEND_KEY, { to: [clientEmail], subject: subjectFr, html: buildClosingClientHtmlFr(payload), cc: ["services@novopiscines.ca"] });
+        }
+      } else {
+        // All other service types: admin gets internal copy, client gets standard copy
+        await sendEmail(RESEND_KEY, { to: [ADMIN_EMAIL], subject, html: buildReportHtml(payload, false) });
+        if (clientEmail && clientEmail !== ADMIN_EMAIL) {
+          await sendEmail(RESEND_KEY, { to: [clientEmail], subject, html: buildReportHtml(payload, true), cc: ["services@novopiscines.ca"] });
+        }
       }
     }
 
