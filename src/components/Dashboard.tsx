@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import {
   LogOut, ClipboardList, User, Settings, CalendarDays,
   Send, ClipboardCheck, RefreshCw, MapPin, Users, Waves, DollarSign, BookOpen,
-  FileText, Calculator, Paintbrush,
+  FileText, Calculator, Paintbrush, AlertTriangle,
 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 import ClientSearch from './ClientSearch';
 import AssistantRoute from './AssistantRoute';
 import LinerQuoteGenerator from './LinerQuoteGenerator';
@@ -33,8 +34,34 @@ export default function Dashboard() {
   const defaultTab: Tab = isAssistant ? 'myroute' : 'actions';
   const [activeTab, setActiveTab] = useState<Tab>(defaultTab);
   const [salesSubTab, setSalesSubTab] = useState<SalesSubTab>('liner');
+  const [doubleBookings, setDoubleBookings] = useState<{ email: string; client_name: string; count: number; dates: string[] }[]>([]);
 
   useEffect(() => { if (isAssistant) setActiveTab('myroute'); }, [isAssistant]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('bookings')
+          .select('email, client_name, event_date, status, job_status')
+          .ilike('service_type', '%closing%')
+          .in('status', ['approved', 'pending', 'pre_book'])
+          .not('job_status', 'in', '("cancelled","hidden")');
+        if (error) throw error;
+        const byEmail: Record<string, { email: string; client_name: string; dates: string[] }> = {};
+        (data || []).forEach((b: { email: string; client_name: string; event_date: string }) => {
+          if (!b.email) return;
+          if (!byEmail[b.email]) byEmail[b.email] = { email: b.email, client_name: b.client_name || b.email, dates: [] };
+          if (!byEmail[b.email].dates.includes(b.event_date)) byEmail[b.email].dates.push(b.event_date);
+        });
+        const doubles = Object.values(byEmail)
+          .filter(v => v.dates.length > 1)
+          .map(v => ({ email: v.email, client_name: v.client_name, count: v.dates.length, dates: v.dates.sort() }));
+        setDoubleBookings(doubles);
+      } catch { /* non-critical */ }
+    })();
+  }, [isAdmin]);
 
   const handleLogout = () => {
     sessionStorage.removeItem('technician');
@@ -170,6 +197,29 @@ export default function Dashboard() {
             </h1>
             <p className="text-sm text-neutral-500 mt-0.5">What would you like to do today?</p>
           </div>
+
+          {/* Double-booking alert */}
+          {isAdmin && doubleBookings.length > 0 && (
+            <div className="card border-red-200 bg-red-50 px-4 py-3.5 flex items-start gap-3 mb-6">
+              <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-red-800">Double Pool Closing Bookings Detected</p>
+                <p className="text-xs text-red-600 mt-0.5 mb-2">
+                  {doubleBookings.length} client{doubleBookings.length !== 1 ? 's have' : ' has'} multiple pool closing bookings. Review and cancel duplicates.
+                </p>
+                <div className="space-y-1.5">
+                  {doubleBookings.map(d => (
+                    <div key={d.email} className="flex flex-wrap items-center gap-2 text-xs bg-white rounded-lg px-3 py-2 border border-red-200">
+                      <span className="font-semibold text-neutral-800">{d.client_name}</span>
+                      <span className="text-neutral-500">{d.email}</span>
+                      <span className="badge-red">{d.count} closings</span>
+                      <span className="text-neutral-500">Dates: {d.dates.join(', ')}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {actions.map(action => (

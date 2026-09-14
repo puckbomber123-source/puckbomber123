@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LogOut, User, Plus, Pencil, Trash2, ArrowLeft, Users, RefreshCw,
   History, UserCheck, X, Waves, Settings2, ToggleLeft, ToggleRight, Eye, EyeOff, ListTodo,
+  Mail, Copy, Check, AlertTriangle,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { z } from 'zod';
@@ -54,6 +55,10 @@ export default function AdminDashboard() {
   const [syncEmail, setSyncEmail] = useState('');
   const [syncing, setSyncing] = useState(false);
   const [showPinFor, setShowPinFor] = useState<string | null>(null);
+  const [closingEmails, setClosingEmails] = useState<string[]>([]);
+  const [loadingClosings, setLoadingClosings] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [doubleBookings, setDoubleBookings] = useState<{ email: string; client_name: string; count: number; dates: string[] }[]>([]);
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<TechnicianFormData>({
     resolver: zodResolver(technicianSchema),
@@ -63,7 +68,54 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (technician.role !== 'Admin') { navigate('/dashboard'); return; }
     fetchTechnicians();
+    fetchClosingEmails();
+    fetchDoubleBookings();
   }, [navigate]);
+
+  const fetchClosingEmails = async () => {
+    setLoadingClosings(true);
+    try {
+      const { data, error } = await supabase
+        .from('confirmed_closing_emails')
+        .select('email')
+        .order('email');
+      if (error) throw error;
+      setClosingEmails((data || []).map((r: { email: string }) => r.email));
+    } catch { toast.error('Failed to load confirmed closing emails'); }
+    finally { setLoadingClosings(false); }
+  };
+
+  const fetchDoubleBookings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('email, client_name, event_date, status, job_status')
+        .ilike('service_type', '%closing%')
+        .in('status', ['approved', 'pending', 'pre_book'])
+        .not('job_status', 'in', '("cancelled","hidden")');
+      if (error) throw error;
+      const byEmail: Record<string, { email: string; client_name: string; dates: string[] }> = {};
+      (data || []).forEach((b: { email: string; client_name: string; event_date: string }) => {
+        if (!b.email) return;
+        if (!byEmail[b.email]) byEmail[b.email] = { email: b.email, client_name: b.client_name || b.email, dates: [] };
+        if (!byEmail[b.email].dates.includes(b.event_date)) byEmail[b.email].dates.push(b.event_date);
+      });
+      const doubles = Object.values(byEmail)
+        .filter(v => v.dates.length > 1)
+        .map(v => ({ email: v.email, client_name: v.client_name, count: v.dates.length, dates: v.dates.sort() }));
+      setDoubleBookings(doubles);
+    } catch { /* non-critical */ }
+  };
+
+  const handleCopyEmails = async () => {
+    const text = closingEmails.join('\n');
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      toast.success(`Copied ${closingEmails.length} emails to clipboard`);
+    } catch { toast.error('Failed to copy'); }
+  };
 
   const fetchTechnicians = async () => {
     const { data, error } = await supabase
@@ -203,6 +255,78 @@ export default function AdminDashboard() {
               </button>
             ))}
           </div>
+        </section>
+
+        {/* Double-booking alert */}
+        {doubleBookings.length > 0 && (
+          <section>
+            <div className="card border-red-200 bg-red-50 px-4 py-3.5 flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-red-800">Double Pool Closing Bookings Detected</p>
+                <p className="text-xs text-red-600 mt-0.5 mb-2">
+                  {doubleBookings.length} client{doubleBookings.length !== 1 ? 's have' : ' has'} multiple pool closing bookings. Review and cancel duplicates.
+                </p>
+                <div className="space-y-1.5">
+                  {doubleBookings.map(d => (
+                    <div key={d.email} className="flex flex-wrap items-center gap-2 text-xs bg-white rounded-lg px-3 py-2 border border-red-200">
+                      <span className="font-semibold text-neutral-800">{d.client_name}</span>
+                      <span className="text-neutral-500">{d.email}</span>
+                      <span className="badge-red">{d.count} closings</span>
+                      <span className="text-neutral-500">Dates: {d.dates.join(', ')}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Confirmed closing emails */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="section-title mb-0">Confirmed Pool Closing Emails</p>
+              <p className="text-xs text-neutral-500 mt-0.5">
+                Clients with an approved, non-cancelled pool closing. Copy this list to suppress closing reminders in n8n.
+              </p>
+            </div>
+            {closingEmails.length > 0 && (
+              <button
+                onClick={handleCopyEmails}
+                className="btn-primary btn-sm gap-1.5 shrink-0"
+              >
+                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? 'Copied!' : 'Copy All'}
+              </button>
+            )}
+          </div>
+          {loadingClosings ? (
+            <div className="card card-body text-center py-6">
+              <RefreshCw className="w-5 h-5 text-neutral-400 animate-spin mx-auto mb-2" />
+              <p className="text-sm text-neutral-500">Loading confirmed closings…</p>
+            </div>
+          ) : closingEmails.length === 0 ? (
+            <div className="card card-body text-center py-6">
+              <Mail className="w-5 h-5 text-neutral-300 mx-auto mb-2" />
+              <p className="text-sm text-neutral-500">No confirmed pool closings yet.</p>
+            </div>
+          ) : (
+            <div className="card card-body">
+              <div className="flex items-center gap-2 mb-3 pb-3 border-b border-neutral-200">
+                <span className="badge-teal">{closingEmails.length} emails</span>
+                <span className="text-xs text-neutral-500">Click Copy All to copy to clipboard</span>
+              </div>
+              <div className="max-h-64 overflow-y-auto space-y-0.5">
+                {closingEmails.map(email => (
+                  <div key={email} className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-neutral-50 transition-colors">
+                    <Mail className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                    <span className="text-sm text-neutral-700 font-mono">{email}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Seasonal city schedules */}
