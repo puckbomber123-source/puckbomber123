@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LogOut, ClipboardList, User, Settings, CalendarDays,
   Send, ClipboardCheck, RefreshCw, MapPin, Users, Waves, DollarSign, BookOpen,
-  FileText, Calculator, Paintbrush, AlertTriangle,
+  FileText, Calculator, Paintbrush, AlertTriangle, X,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import ClientSearch from './ClientSearch';
@@ -35,6 +35,7 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<Tab>(defaultTab);
   const [salesSubTab, setSalesSubTab] = useState<SalesSubTab>('liner');
   const [doubleBookings, setDoubleBookings] = useState<{ email: string; client_name: string; count: number; dates: string[] }[]>([]);
+  const [dismissedDoubles, setDismissedDoubles] = useState(false);
 
   useEffect(() => { if (isAssistant) setActiveTab('myroute'); }, [isAssistant]);
 
@@ -199,8 +200,15 @@ export default function Dashboard() {
           </div>
 
           {/* Double-booking alert */}
-          {isAdmin && doubleBookings.length > 0 && (
-            <div className="card border-red-200 bg-red-50 px-4 py-3.5 flex items-start gap-3 mb-6">
+          {isAdmin && doubleBookings.length > 0 && !dismissedDoubles && (
+            <div className="card border-red-200 bg-red-50 px-4 py-3.5 flex items-start gap-3 mb-6 relative">
+              <button
+                onClick={() => setDismissedDoubles(true)}
+                className="absolute top-2 right-2 text-red-400 hover:text-red-600 transition-colors"
+                title="Dismiss"
+              >
+                <X className="w-4 h-4" />
+              </button>
               <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-red-800">Double Pool Closing Bookings Detected</p>
