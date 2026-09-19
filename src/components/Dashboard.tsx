@@ -4,6 +4,7 @@ import {
   LogOut, ClipboardList, User, Settings, CalendarDays,
   Send, ClipboardCheck, RefreshCw, MapPin, Users, Waves, DollarSign, BookOpen,
   FileText, Calculator, Paintbrush, AlertTriangle, X,
+  Copy, Check, Star, ExternalLink,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import BonusTracker from './BonusTracker';
@@ -37,6 +38,8 @@ export default function Dashboard() {
   const [salesSubTab, setSalesSubTab] = useState<SalesSubTab>('liner');
   const [doubleBookings, setDoubleBookings] = useState<{ email: string; client_name: string; count: number; dates: string[] }[]>([]);
   const [dismissedDoubles, setDismissedDoubles] = useState(false);
+  const [copiedReview, setCopiedReview] = useState(false);
+  const REVIEW_LINK = 'https://g.page/r/CdFTMUDvEQ1EEAE/review';
 
   useEffect(() => { if (isAssistant) setActiveTab('myroute'); }, [isAssistant]);
 
@@ -208,6 +211,39 @@ export default function Dashboard() {
               embedded
             />
           </div>
+
+          {/* Review link copy — employees only (non-admin) */}
+          {!isAdmin && (
+            <div className="card border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3.5 flex items-center gap-3 mb-6">
+              <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
+                <Star className="w-4.5 h-4.5 text-amber-500 fill-amber-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-amber-900">Send clients our Google Review link</p>
+                <p className="text-xs text-amber-700 mt-0.5">Copy & share — earn $5 per review, $20 with a photo!</p>
+              </div>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(REVIEW_LINK);
+                  setCopiedReview(true);
+                  setTimeout(() => setCopiedReview(false), 2000);
+                }}
+                className="btn-primary btn-sm gap-1.5 shrink-0"
+              >
+                {copiedReview ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                {copiedReview ? 'Copied!' : 'Copy Link'}
+              </button>
+              <a
+                href={REVIEW_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-icon shrink-0 text-amber-600 hover:text-amber-700"
+                title="Open review page"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            </div>
+          )}
 
           {/* Double-booking alert */}
           {isAdmin && doubleBookings.length > 0 && !dismissedDoubles && (
