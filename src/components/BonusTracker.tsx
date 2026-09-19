@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 
 const SUPER_ADMIN_ID = '002';
 const BONUS_GOAL = 300;
+const EXCLUDED_STAFF_IDS = ['002', 'Sonic'];
 const NO_PIC_AMOUNT = 5;
 const WITH_PIC_AMOUNT = 20;
 
@@ -59,7 +60,9 @@ export default function BonusTracker({ isSuperAdmin, currentTechId, embedded }: 
       const techs = (techRes.data || []).filter((t: any) => t.is_active);
       const bonuses = bonusRes.data || [];
 
-      const combined: TechBonus[] = techs.map((t: any) => {
+      const combined: TechBonus[] = techs
+        .filter((t: any) => !EXCLUDED_STAFF_IDS.includes(t.staff_id))
+        .map((t: any) => {
         const entries = bonuses.filter((b: BonusEntry) => b.technician_id === t.id);
         const total = entries.reduce((sum: number, e: BonusEntry) => sum + Number(e.amount), 0);
         return {
