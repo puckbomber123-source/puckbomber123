@@ -12,6 +12,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
 import ClientSearch from './ClientSearch';
 import SeasonalCityCalendar from './SeasonalCityCalendar';
+import BonusTracker from './BonusTracker';
 
 const SUPER_ADMIN_ID = '002';
 
@@ -234,6 +235,16 @@ export default function AdminDashboard() {
       </nav>
 
       <main className="page-content space-y-8">
+        {/* Bonus Tracker */}
+        <section>
+          <p className="section-title">Review Bonus Tracker</p>
+          <BonusTracker
+            isSuperAdmin={isSuperAdmin}
+            currentTechId={technician.id}
+            embedded
+          />
+        </section>
+
         {/* Quick links */}
         <section>
           <p className="section-title">Quick Actions</p>

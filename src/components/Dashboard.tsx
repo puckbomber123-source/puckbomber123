@@ -6,6 +6,7 @@ import {
   FileText, Calculator, Paintbrush, AlertTriangle, X,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import BonusTracker from './BonusTracker';
 import ClientSearch from './ClientSearch';
 import AssistantRoute from './AssistantRoute';
 import LinerQuoteGenerator from './LinerQuoteGenerator';
@@ -197,6 +198,15 @@ export default function Dashboard() {
               Good {getGreeting()}, {technician.first_name || technician.name?.split(' ')[0]}
             </h1>
             <p className="text-sm text-neutral-500 mt-0.5">What would you like to do today?</p>
+          </div>
+
+          {/* Bonus Tracker — first thing they see */}
+          <div className="mb-6">
+            <BonusTracker
+              isSuperAdmin={technician.staff_id === '002' || technician.id === '002'}
+              currentTechId={technician.id}
+              embedded
+            />
           </div>
 
           {/* Double-booking alert */}
