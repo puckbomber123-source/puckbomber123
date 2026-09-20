@@ -305,6 +305,22 @@ export default function InvoiceMonitor() {
     setShowSynced(false);
   }
 
+  const [sendingReviewId, setSendingReviewId] = useState<string | null>(null);
+
+  async function sendReviewEmail(job: JobCard, language: 'en' | 'fr') {
+    setSendingReviewId(job.id);
+    try {
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('send-review-email', {
+        body: { reportId: job.linked_report_id, bookingId: job.id, language },
+      });
+      if (fnError) throw fnError;
+      toast.success(language === 'fr' ? 'Review email sent (French)' : 'Review email sent (English)');
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to send review email');
+    }
+    setSendingReviewId(null);
+  }
+
   function toggleSelect(id: string) {
     setSelectedIds(prev => {
       const next = new Set(prev);
@@ -572,6 +588,29 @@ export default function InvoiceMonitor() {
                                         className="text-brand-600 hover:underline flex items-center gap-1 text-xs font-medium">
                                         <ExternalLink className="w-3 h-3" />View Service Report
                                       </button>
+                                    </div>
+                                  )}
+                                  {job.report_completed && (
+                                    <div className="col-span-2 mt-1">
+                                      <p className="text-neutral-400 font-medium mb-1 flex items-center gap-1"><Star className="w-3 h-3" />Request Google Review</p>
+                                      <div className="flex gap-1.5">
+                                        <button
+                                          onClick={() => sendReviewEmail(job, 'en')}
+                                          disabled={sendingReviewId === job.id}
+                                          className="text-[11px] px-2.5 py-1 rounded-lg font-medium bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition flex items-center gap-1"
+                                        >
+                                          {sendingReviewId === job.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Star className="w-3 h-3" />}
+                                          EN
+                                        </button>
+                                        <button
+                                          onClick={() => sendReviewEmail(job, 'fr')}
+                                          disabled={sendingReviewId === job.id}
+                                          className="text-[11px] px-2.5 py-1 rounded-lg font-medium bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition flex items-center gap-1"
+                                        >
+                                          {sendingReviewId === job.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Star className="w-3 h-3" />}
+                                          FR
+                                        </button>
+                                      </div>
                                     </div>
                                   )}
                                 </div>
