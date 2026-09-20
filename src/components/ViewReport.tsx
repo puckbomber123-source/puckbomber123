@@ -165,7 +165,14 @@ export default function ViewReport() {
     <div className="min-h-screen bg-neutral-50">
       <header className="navbar">
         <div className="navbar-inner flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-neutral-600 hover:text-neutral-900 transition-colors">
+          <button onClick={() => {
+            const saved = sessionStorage.getItem('invoiceMonitorState');
+            if (saved) {
+              navigate('/job-status');
+            } else {
+              navigate(-1);
+            }
+          }} className="flex items-center gap-1.5 text-neutral-600 hover:text-neutral-900 transition-colors">
             <ArrowLeft className="w-5 h-5" />
             <span className="text-sm font-medium">Back</span>
           </button>

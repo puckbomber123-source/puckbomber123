@@ -91,6 +91,19 @@ export default function InvoiceMonitor() {
   const [showSynced, setShowSynced] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+  useEffect(() => {
+    const saved = sessionStorage.getItem('invoiceMonitorState');
+    if (saved) {
+      try {
+        const s = JSON.parse(saved);
+        if (s.filterStage) setFilterStage(s.filterStage);
+        if (typeof s.searchQuery === 'string') setSearchQuery(s.searchQuery);
+        if (s.expandedJob) setExpandedJob(s.expandedJob);
+      } catch { /* ignore */ }
+      sessionStorage.removeItem('invoiceMonitorState');
+    }
+  }, []);
+
   const fetchJobs = useCallback(async () => {
     setLoading(true);
     const { data: bookingData, error: bkError } = await supabase
@@ -552,7 +565,10 @@ export default function InvoiceMonitor() {
                                   )}
                                   {job.linked_report_id && (
                                     <div className="col-span-2">
-                                      <button onClick={() => navigate('/submit-report', { state: { reportId: job.linked_report_id, assignmentId: job.assignment_id } })}
+                                      <button onClick={() => {
+                                        sessionStorage.setItem('invoiceMonitorState', JSON.stringify({ filterStage, searchQuery, expandedJob }));
+                                        navigate('/view-report', { state: { reportId: job.linked_report_id } });
+                                      }}
                                         className="text-brand-600 hover:underline flex items-center gap-1 text-xs font-medium">
                                         <ExternalLink className="w-3 h-3" />View Service Report
                                       </button>
