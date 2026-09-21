@@ -149,6 +149,7 @@ Deno.serve(async (req: Request) => {
 
     const headers = {
       Authorization: `Bearer ${serviceKey}`,
+      apikey: serviceKey,
       "Content-Type": "application/json",
     };
 
