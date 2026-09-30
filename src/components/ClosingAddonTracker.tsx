@@ -66,19 +66,19 @@ export default function ClosingAddonTracker() {
         t.reports.push(r);
 
         const addons = r.closing_add_ons || [];
-        for (const a of addons) {
-          t.addonCounts[a] = (t.addonCounts[a] || 0) + 1;
-          t.totalAddons++;
-        }
+        const qtyAddons: Record<string, number> = {};
+        if (r.gizmo_qty != null && r.gizmo_qty > 0) qtyAddons['Gizmo'] = r.gizmo_qty;
+        if (r.return_plug_qty != null && r.return_plug_qty > 0) qtyAddons['Return Plug'] = r.return_plug_qty;
+        if (r.yellow_cover_picks_qty != null && r.yellow_cover_picks_qty > 0) qtyAddons['Yellow Cover Picks'] = r.yellow_cover_picks_qty;
 
-        if (r.gizmo_qty != null && r.gizmo_qty > 0) {
-          t.addonCounts['Gizmo'] = (t.addonCounts['Gizmo'] || 0) + r.gizmo_qty;
-        }
-        if (r.return_plug_qty != null && r.return_plug_qty > 0) {
-          t.addonCounts['Return Plug'] = (t.addonCounts['Return Plug'] || 0) + r.return_plug_qty;
-        }
-        if (r.yellow_cover_picks_qty != null && r.yellow_cover_picks_qty > 0) {
-          t.addonCounts['Yellow Cover Picks'] = (t.addonCounts['Yellow Cover Picks'] || 0) + r.yellow_cover_picks_qty;
+        for (const a of addons) {
+          if (qtyAddons[a] != null) {
+            t.addonCounts[a] = (t.addonCounts[a] || 0) + qtyAddons[a];
+            t.totalAddons += qtyAddons[a];
+          } else {
+            t.addonCounts[a] = (t.addonCounts[a] || 0) + 1;
+            t.totalAddons++;
+          }
         }
       }
 

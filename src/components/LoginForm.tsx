@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Waves, AlertTriangle, Delete } from 'lucide-react';
+import { Waves, AlertTriangle, Delete, Trophy } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 
@@ -108,6 +108,24 @@ export default function LoginForm() {
           {!selectedTech ? (
             /* User selection grid */
             <div>
+              {/* Review contest banner */}
+              <div className="mb-4 rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
+                    <Trophy className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-amber-900">$100 Review Bonus Contest</p>
+                    <p className="text-[11px] text-amber-700">Whoever collects the most review $ by Nov 1, 2026 wins $100</p>
+                  </div>
+                </div>
+                <div className="space-y-1 text-[11px] text-amber-800 leading-relaxed">
+                  <p><strong>5-Star review alone = $5</strong></p>
+                  <p><strong>5-Star + picture + solid text = $20</strong> <span className="text-amber-600">(keyword + location + tech name)</span></p>
+                  <p><strong>Max 3 reviews/day</strong> counted — anyone can write one (mom, dad, friend, dog)</p>
+                </div>
+              </div>
+
               <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3 text-center">Select your name</p>
               {loading ? (
                 <div className="text-center py-8 text-neutral-400 text-sm">Loading…</div>
