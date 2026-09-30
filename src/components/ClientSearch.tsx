@@ -39,7 +39,10 @@ interface ServiceReport {
   service_type: string;
   opening_type: string;
   opening_add_ons: string[];
+  closing_add_ons: string[];
+  closing_checklist: string[];
   client_paid_cash: boolean;
+  cash_amount: number | null;
   completed_time: string | null;
   submitted_at: string;
   technician_notes: string;
@@ -60,10 +63,17 @@ interface ServiceReport {
   garden_hose: string[];
   cement_pool: string[];
   marketing: string[];
+  client_followup: string[];
   final_inspection: string[];
+  return_plug_qty: number | null;
+  gizmo_qty: number | null;
+  yellow_cover_picks_qty: number | null;
   photo_pool_area: string;
   photo_pool_equipment: string;
   photo_extra: string;
+  photo_removed_parts: string;
+  property_left_clean: boolean | null;
+  pool_type_override: string | null;
 }
 
 const SWIM_READY_VIEW_SUBSECTIONS = [
@@ -150,6 +160,18 @@ function ReportViewer({ report, onClose }: { report: ServiceReport; onClose: () 
               <span className={`text-xs font-semibold ${report.client_paid_cash ? 'text-green-600' : 'text-neutral-400'}`}>{report.client_paid_cash ? 'Yes — paid cash' : 'No'}</span>
             </div>
             {submittedAt && <InfoRow label="Submitted" value={submittedAt} />}
+            {report.cash_amount != null && Number(report.cash_amount) > 0 && (
+              <div className="flex justify-between items-center py-1.5 border-b border-neutral-50 gap-3">
+                <span className="text-xs text-neutral-400 flex items-center gap-1 shrink-0"><DollarSign className="w-3 h-3" />Cash Amount</span>
+                <span className="text-xs font-bold text-green-600">${Number(report.cash_amount).toFixed(2)}</span>
+              </div>
+            )}
+            {report.property_left_clean != null && (
+              <InfoRow label="Property Left Clean" value={report.property_left_clean ? 'Yes' : 'No'} />
+            )}
+            {report.pool_type_override && (
+              <InfoRow label="Pool Type (Override)" value={report.pool_type_override} />
+            )}
           </div>
 
           {report.opening_add_ons?.length > 0 && (
@@ -158,6 +180,29 @@ function ReportViewer({ report, onClose }: { report: ServiceReport; onClose: () 
               <div className="flex flex-wrap gap-1.5">
                 {report.opening_add_ons.map(a => <span key={a} className="badge-teal">{a}</span>)}
               </div>
+            </div>
+          )}
+
+          {report.closing_add_ons?.length > 0 && (
+            <div className="card card-body">
+              <p className="section-title">Closing Add-ons</p>
+              <div className="flex flex-wrap gap-1.5">
+                {report.closing_add_ons.map(a => <span key={a} className="badge-teal">{a}</span>)}
+              </div>
+              {(report.return_plug_qty != null || report.gizmo_qty != null || report.yellow_cover_picks_qty != null) && (
+                <div className="mt-2 flex flex-wrap gap-3 text-xs text-neutral-700">
+                  {report.return_plug_qty != null && <span><strong className="text-neutral-900">Return Plugs:</strong> {report.return_plug_qty}</span>}
+                  {report.gizmo_qty != null && <span><strong className="text-neutral-900">Gizmos:</strong> {report.gizmo_qty}</span>}
+                  {report.yellow_cover_picks_qty != null && <span><strong className="text-neutral-900">Yellow Cover Picks:</strong> {report.yellow_cover_picks_qty}</span>}
+                </div>
+              )}
+            </div>
+          )}
+
+          {report.closing_checklist?.length > 0 && (
+            <div className="card card-body">
+              <p className="section-title">Closing Checklist</p>
+              <ChipList items={report.closing_checklist} />
             </div>
           )}
 
@@ -239,6 +284,13 @@ function ReportViewer({ report, onClose }: { report: ServiceReport; onClose: () 
             </div>
           )}
 
+          {report.client_followup?.length > 0 && (
+            <div className="card card-body">
+              <p className="section-title">Client Follow-Up Notes</p>
+              <ChipList items={report.client_followup} />
+            </div>
+          )}
+
           {(() => {
             const items = isSwimReady && checklistData?.final_insp ? checklistData.final_insp : report.final_inspection;
             if (!items?.length) return null;
@@ -265,7 +317,7 @@ function ReportViewer({ report, onClose }: { report: ServiceReport; onClose: () 
             </div>
           )}
 
-          {(report.photo_pool_area || report.photo_pool_equipment || report.photo_extra) && (
+          {(report.photo_pool_area || report.photo_pool_equipment || report.photo_extra || report.photo_removed_parts) && (
             <div className="card card-body">
               <p className="section-title flex items-center gap-1.5"><Image className="w-3.5 h-3.5" />Photos</p>
               <div className="space-y-3">
@@ -277,6 +329,9 @@ function ReportViewer({ report, onClose }: { report: ServiceReport; onClose: () 
                 )}
                 {report.photo_extra && (
                   <div><p className="text-xs text-neutral-400 mb-1">Extra</p><img src={report.photo_extra} alt="Extra" className="w-full rounded-xl border border-neutral-200 object-cover max-h-56" /></div>
+                )}
+                {report.photo_removed_parts && (
+                  <div><p className="text-xs text-neutral-400 mb-1">Removed Parts</p><img src={report.photo_removed_parts} alt="Removed Parts" className="w-full rounded-xl border border-neutral-200 object-cover max-h-56" /></div>
                 )}
               </div>
             </div>
