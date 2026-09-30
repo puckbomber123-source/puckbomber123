@@ -109,20 +109,33 @@ export default function LoginForm() {
             /* User selection grid */
             <div>
               {/* Review contest banner */}
-              <div className="mb-4 rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
-                    <Trophy className="w-4 h-4 text-amber-600" />
+              <div className="mb-4 rounded-2xl border-2 border-amber-300 bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 p-[3px] shadow-lg">
+                <div className="rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 px-4 py-4">
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shrink-0 shadow-md">
+                      <Trophy className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-base font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 tracking-tight">
+                        $100 Review Contest!
+                      </p>
+                      <p className="text-[11px] font-semibold text-amber-700">Most review $ collected by Nov 1 wins $100 cash</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-bold text-amber-900">$100 Review Bonus Contest</p>
-                    <p className="text-[11px] text-amber-700">Whoever collects the most review $ by Nov 1, 2026 wins $100</p>
+                  <div className="space-y-1.5 text-[11px] leading-relaxed">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                      <span className="text-amber-900"><strong className="font-bold">5-Star review = $5</strong></span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0" />
+                      <span className="text-amber-900"><strong className="font-bold">5-Star + photo + text = $20</strong> <span className="text-orange-600 font-medium">(keyword + location + tech name)</span></span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                      <span className="text-amber-900"><strong className="font-bold">Max 3 reviews/day</strong> — anyone can write one (mom, dad, friend, dog!)</span>
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-1 text-[11px] text-amber-800 leading-relaxed">
-                  <p><strong>5-Star review alone = $5</strong></p>
-                  <p><strong>5-Star + picture + solid text = $20</strong> <span className="text-amber-600">(keyword + location + tech name)</span></p>
-                  <p><strong>Max 3 reviews/day</strong> counted — anyone can write one (mom, dad, friend, dog)</p>
                 </div>
               </div>
 
