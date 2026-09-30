@@ -13,6 +13,7 @@ import toast from 'react-hot-toast';
 import ClientSearch from './ClientSearch';
 import SeasonalCityCalendar from './SeasonalCityCalendar';
 import BonusTracker from './BonusTracker';
+import ClosingAddonTracker from './ClosingAddonTracker';
 
 const SUPER_ADMIN_ID = '002';
 
@@ -244,6 +245,15 @@ export default function AdminDashboard() {
             embedded
           />
         </section>
+
+        {/* Closing Add-on Tracker — super-admin only */}
+        {isSuperAdmin && (
+          <section>
+            <p className="section-title">Closing Add-on Tracker</p>
+            <p className="text-xs text-neutral-500 mb-3">Tracks which technicians added which closing add-ons (gizmos, return plugs, yellow cover picks, etc.) across all pool closing reports.</p>
+            <ClosingAddonTracker />
+          </section>
+        )}
 
         {/* Quick links */}
         <section>
