@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Star, Trophy, TrendingUp, Plus, Trash2, X, Sparkles, Award } from 'lucide-react';
+import { Star, Trophy, TrendingUp, Plus, Trash2, X, Sparkles, Award, Split } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
@@ -46,6 +46,10 @@ export default function BonusTracker({ isSuperAdmin, currentTechId, embedded }: 
   const [addDate, setAddDate] = useState(new Date().toISOString().slice(0, 10));
   const [addNotes, setAddNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const [splitMode, setSplitMode] = useState(false);
+  const [addTech2Id, setAddTech2Id] = useState('');
+  const [splitAmount1, setSplitAmount1] = useState(10);
+  const [splitAmount2, setSplitAmount2] = useState(10);
 
   const fetchBonuses = useCallback(async () => {
     setLoading(true);
@@ -88,22 +92,41 @@ export default function BonusTracker({ isSuperAdmin, currentTechId, embedded }: 
 
   const handleAdd = async () => {
     if (!addTechId) { toast.error('Select a technician'); return; }
+    if (splitMode && !addTech2Id) { toast.error('Select a second technician'); return; }
+    if (splitMode && addTechId === addTech2Id) { toast.error('Pick two different technicians'); return; }
     setSaving(true);
     try {
-      const amount = addType === 'with_picture' ? WITH_PIC_AMOUNT : NO_PIC_AMOUNT;
-      const { error } = await supabase.from('review_bonus_entries').insert({
-        technician_id: addTechId,
-        reviewer_name: addReviewer.trim() || null,
-        review_type: addType,
-        amount,
-        bonus_date: addDate,
-        notes: addNotes.trim() || null,
-        created_by: SUPER_ADMIN_ID,
-      });
-      if (error) throw error;
-      toast.success(`$${amount} bonus added`);
+      if (splitMode) {
+        const total = addType === 'with_picture' ? WITH_PIC_AMOUNT : NO_PIC_AMOUNT;
+        if (splitAmount1 + splitAmount2 !== total) {
+          toast.error(`Split must add up to ${total}`);
+          setSaving(false);
+          return;
+        }
+        const rows = [
+          { technician_id: addTechId, reviewer_name: addReviewer.trim() || null, review_type: addType, amount: splitAmount1, bonus_date: addDate, notes: (addNotes.trim() || null), created_by: SUPER_ADMIN_ID },
+          { technician_id: addTech2Id, reviewer_name: addReviewer.trim() || null, review_type: addType, amount: splitAmount2, bonus_date: addDate, notes: (addNotes.trim() || null), created_by: SUPER_ADMIN_ID },
+        ];
+        const { error } = await supabase.from('review_bonus_entries').insert(rows);
+        if (error) throw error;
+        toast.success(`${total} bonus split (${splitAmount1} + ${splitAmount2})`);
+      } else {
+        const amount = addType === 'with_picture' ? WITH_PIC_AMOUNT : NO_PIC_AMOUNT;
+        const { error } = await supabase.from('review_bonus_entries').insert({
+          technician_id: addTechId,
+          reviewer_name: addReviewer.trim() || null,
+          review_type: addType,
+          amount,
+          bonus_date: addDate,
+          notes: addNotes.trim() || null,
+          created_by: SUPER_ADMIN_ID,
+        });
+        if (error) throw error;
+        toast.success(`${amount} bonus added`);
+      }
       setShowAddModal(false);
       setAddReviewer(''); setAddNotes(''); setAddType('no_picture');
+      setSplitMode(false); setAddTech2Id(''); setSplitAmount1(10); setSplitAmount2(10);
       fetchBonuses();
     } catch { toast.error('Failed to add bonus'); }
     finally { setSaving(false); }
@@ -254,7 +277,17 @@ export default function BonusTracker({ isSuperAdmin, currentTechId, embedded }: 
             </div>
             <div className="space-y-3">
               <div>
-                <label className="form-label">Technician</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="form-label mb-0">Technician</label>
+                  <button
+                    type="button"
+                    onClick={() => { setSplitMode(!splitMode); setAddTech2Id(''); }}
+                    className={`flex items-center gap-1 text-[11px] font-medium transition-colors ${splitMode ? 'text-brand-600' : 'text-neutral-400 hover:text-neutral-600'}`}
+                  >
+                    <Split className="w-3 h-3" />
+                    Split between two
+                  </button>
+                </div>
                 <select value={addTechId} onChange={e => setAddTechId(e.target.value)} className="form-select">
                   <option value="">Select…</option>
                   {techBonuses.map(t => (
@@ -262,6 +295,46 @@ export default function BonusTracker({ isSuperAdmin, currentTechId, embedded }: 
                   ))}
                 </select>
               </div>
+              {splitMode && (
+                <div className="rounded-lg border border-brand-200 bg-brand-50/50 p-3 space-y-3">
+                  <div>
+                    <label className="form-label">Second Technician</label>
+                    <select value={addTech2Id} onChange={e => setAddTech2Id(e.target.value)} className="form-select">
+                      <option value="">Select…</option>
+                      {techBonuses.filter(t => t.technician_id !== addTechId).map(t => (
+                        <option key={t.technician_id} value={t.technician_id}>{t.first_name} {t.last_name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="form-label">Tech 1 share ($)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={addType === 'with_picture' ? WITH_PIC_AMOUNT : NO_PIC_AMOUNT}
+                        value={splitAmount1}
+                        onChange={e => { const v = Number(e.target.value) || 0; setSplitAmount1(v); const total = addType === 'with_picture' ? WITH_PIC_AMOUNT : NO_PIC_AMOUNT; setSplitAmount2(total - v); }}
+                        className="form-input"
+                      />
+                    </div>
+                    <div>
+                      <label className="form-label">Tech 2 share ($)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={addType === 'with_picture' ? WITH_PIC_AMOUNT : NO_PIC_AMOUNT}
+                        value={splitAmount2}
+                        onChange={e => { const v = Number(e.target.value) || 0; setSplitAmount2(v); const total = addType === 'with_picture' ? WITH_PIC_AMOUNT : NO_PIC_AMOUNT; setSplitAmount1(total - v); }}
+                        className="form-input"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-neutral-500 text-center">
+                    Total: <strong className={splitAmount1 + splitAmount2 === (addType === 'with_picture' ? WITH_PIC_AMOUNT : NO_PIC_AMOUNT) ? 'text-green-600' : 'text-red-500'}>${splitAmount1 + splitAmount2}</strong> / ${addType === 'with_picture' ? WITH_PIC_AMOUNT : NO_PIC_AMOUNT}
+                  </p>
+                </div>
+              )}
               <div>
                 <label className="form-label">Review Type</label>
                 <div className="grid grid-cols-2 gap-2">
@@ -304,8 +377,8 @@ export default function BonusTracker({ isSuperAdmin, currentTechId, embedded }: 
             </div>
             <div className="flex gap-3 mt-4">
               <button onClick={() => setShowAddModal(false)} className="btn-secondary flex-1">Cancel</button>
-              <button onClick={handleAdd} disabled={saving || !addTechId} className="btn-primary flex-1">
-                {saving ? 'Saving…' : `Add $${addType === 'with_picture' ? WITH_PIC_AMOUNT : NO_PIC_AMOUNT} Bonus`}
+              <button onClick={handleAdd} disabled={saving || !addTechId || (splitMode && !addTech2Id)} className="btn-primary flex-1">
+                {saving ? 'Saving…' : splitMode ? `Split ${addType === 'with_picture' ? WITH_PIC_AMOUNT : NO_PIC_AMOUNT} Bonus` : `Add ${addType === 'with_picture' ? WITH_PIC_AMOUNT : NO_PIC_AMOUNT} Bonus`}
               </button>
             </div>
           </div>
