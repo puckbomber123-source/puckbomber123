@@ -26,6 +26,8 @@ import {
   Send,
   BookOpen,
   Waves,
+  PackageCheck,
+  ClipboardCheck,
 } from 'lucide-react';
 
 interface LocationState {
@@ -766,6 +768,7 @@ export default function SubmitReport() {
 
   const submitLock = useRef(false);
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showReviewModal, setShowReviewModal] = useState(false);
 
   const cement = !!(client?.pool_type && isCementPool(client.pool_type));
   const isOpening = draft.serviceType === 'Pool Opening';
@@ -1300,6 +1303,14 @@ export default function SubmitReport() {
       return;
     }
 
+    setShowReviewModal(true);
+  };
+
+  const confirmAndSubmit = async () => {
+    setShowReviewModal(false);
+
+    if (submitLock.current || isSubmitting) return;
+
     if (!navigator.onLine) {
       setSyncState('offline');
       toast('No internet connection — report saved locally. Submit again when reconnected.', {
@@ -1814,7 +1825,16 @@ export default function SubmitReport() {
               </div>
             )}
 
-            <div className="space-y-3">
+            <div className={`space-y-3 rounded-2xl border-2 p-4 transition-colors ${draft.clientPaidCash ? 'border-green-400 bg-green-50' : 'border-neutral-200 bg-neutral-50'}`}>
+              <div className="flex items-center gap-2 mb-1">
+                <DollarSign className={`w-5 h-5 ${draft.clientPaidCash ? 'text-green-600' : 'text-neutral-400'}`} />
+                <span className="text-sm font-bold text-neutral-800">Did the client pay cash?</span>
+              </div>
+              <p className="text-xs text-neutral-500 mb-2">
+                {draft.clientPaidCash
+                  ? 'Enter the exact cash amount received below.'
+                  : 'Toggle this ON if the client paid cash for this service. Do not skip this!'}
+              </p>
               <label className="flex items-center gap-3 cursor-pointer">
                 <span className={`w-11 h-6 rounded-full relative transition-colors ${draft.clientPaidCash ? 'bg-green-500' : 'bg-neutral-200'}`}>
                   <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${draft.clientPaidCash ? 'translate-x-5' : ''}`} />
@@ -1826,16 +1846,16 @@ export default function SubmitReport() {
                     onChange={e => update('clientPaidCash', e.target.checked)}
                   />
                 </span>
-                <span className="flex items-center gap-1.5 text-sm font-medium text-neutral-700">
-                  <DollarSign className="w-4 h-4 text-green-600" /> Client paid cash
+                <span className={`flex items-center gap-1.5 text-sm font-semibold ${draft.clientPaidCash ? 'text-green-800' : 'text-neutral-700'}`}>
+                  {draft.clientPaidCash ? 'Yes — client paid cash' : 'No cash payment'}
                 </span>
               </label>
 
               {draft.clientPaidCash && (
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1.5">Amount Paid (CAD)</label>
+                  <label className="block text-sm font-bold text-green-800 mb-1.5">Amount Paid (CAD) <span className="text-red-500">*</span></label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm font-medium">$</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-green-600 text-sm font-bold">$</span>
                     <input
                       type="number"
                       min="0"
@@ -1844,9 +1864,12 @@ export default function SubmitReport() {
                       onChange={e => update('cashAmount', e.target.value)}
                       disabled={isSubmitting}
                       placeholder="0.00"
-                      className="w-full rounded-xl border border-green-300 pl-7 pr-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-green-50 disabled:opacity-60"
+                      className="w-full rounded-xl border-2 border-green-400 pl-7 pr-3.5 py-3 text-base font-semibold text-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 bg-white disabled:opacity-60"
                     />
                   </div>
+                  {draft.clientPaidCash && !draft.cashAmount && (
+                    <p className="text-xs text-red-500 font-medium mt-1">Enter the amount before submitting!</p>
+                  )}
                 </div>
               )}
             </div>
@@ -2162,6 +2185,144 @@ export default function SubmitReport() {
           </div>
         </div>
       </div>
+
+      {/* Pre-submit review modal */}
+      {showReviewModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[85vh] overflow-y-auto">
+            <div className="px-5 py-4 border-b border-neutral-100 flex items-center gap-2 sticky top-0 bg-white rounded-t-2xl z-10">
+              <ClipboardCheck className="w-5 h-5 text-brand-600" />
+              <h2 className="text-base font-bold text-neutral-900">Review Before Submitting</h2>
+              <button
+                type="button"
+                onClick={() => setShowReviewModal(false)}
+                className="ml-auto p-1.5 rounded-lg hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="px-5 py-4 space-y-4">
+              {/* Add-ons review */}
+              <div className={`rounded-xl border-2 p-3.5 ${draft.closingAddOns.length === 0 && isClosing ? 'border-amber-300 bg-amber-50' : 'border-neutral-200 bg-neutral-50'}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <PackageCheck className={`w-4 h-4 ${draft.closingAddOns.length === 0 && isClosing ? 'text-amber-500' : 'text-brand-600'}`} />
+                  <p className="text-sm font-bold text-neutral-800">Closing Add-Ons</p>
+                </div>
+                {isClosing ? (
+                  draft.closingAddOns.length === 0 ? (
+                    <div>
+                      <p className="text-sm text-amber-700 font-medium mb-2">No add-ons selected. Are you sure?</p>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowReviewModal(false)}
+                          className="py-2 px-3 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700"
+                        >
+                          Go back & check
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { update('closingAddOns', ['None — no add-ons for this closing']); }}
+                          className="py-2 px-3 rounded-lg border-2 border-amber-300 text-amber-700 text-xs font-semibold hover:bg-amber-100"
+                        >
+                          Confirm: none installed
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      {draft.closingAddOns.map(a => (
+                        <span key={a} className="px-2.5 py-1 rounded-full bg-brand-100 border border-brand-200 text-brand-700 text-xs font-semibold">
+                          {a}
+                        </span>
+                      ))}
+                      {draft.closingAddOns.includes('Return Plug') && draft.returnPlugQty && (
+                        <span className="text-xs text-neutral-500">Return Plugs: {draft.returnPlugQty}</span>
+                      )}
+                      {draft.closingAddOns.includes('Gizmo') && draft.gizmoQty && (
+                        <span className="text-xs text-neutral-500">Gizmos: {draft.gizmoQty}</span>
+                      )}
+                      {draft.closingAddOns.includes('Yellow Cover Picks') && draft.yellowCoverPicksQty && (
+                        <span className="text-xs text-neutral-500">Cover Picks: {draft.yellowCoverPicksQty}</span>
+                      )}
+                    </div>
+                  )
+                ) : (
+                  <p className="text-xs text-neutral-500">Not a closing report.</p>
+                )}
+              </div>
+
+              {/* Cash payment review */}
+              <div className={`rounded-xl border-2 p-3.5 ${draft.clientPaidCash ? 'border-green-300 bg-green-50' : 'border-neutral-200 bg-neutral-50'}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <DollarSign className={`w-4 h-4 ${draft.clientPaidCash ? 'text-green-600' : 'text-neutral-400'}`} />
+                  <p className="text-sm font-bold text-neutral-800">Cash Payment</p>
+                </div>
+                {draft.clientPaidCash ? (
+                  draft.cashAmount ? (
+                    <p className="text-sm text-green-700 font-semibold">Client paid ${draft.cashAmount} CAD in cash</p>
+                  ) : (
+                    <div>
+                      <p className="text-sm text-red-600 font-medium mb-2">Cash toggle is ON but no amount entered!</p>
+                      <button
+                        type="button"
+                        onClick={() => setShowReviewModal(false)}
+                        className="py-2 px-3 rounded-lg bg-red-600 text-white text-xs font-semibold hover:bg-red-700"
+                      >
+                        Go back & enter amount
+                      </button>
+                    </div>
+                  )
+                ) : (
+                  <p className="text-sm text-neutral-500">No cash payment recorded for this job.</p>
+                )}
+              </div>
+
+              {/* Summary */}
+              <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3.5 space-y-1.5">
+                <div className="flex justify-between text-xs">
+                  <span className="text-neutral-500">Service Type</span>
+                  <span className="font-semibold text-neutral-800">{draft.serviceType || '—'}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-neutral-500">Lead Technician</span>
+                  <span className="font-semibold text-neutral-800">{draft.leadTechnician || '—'}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-neutral-500">Date</span>
+                  <span className="font-semibold text-neutral-800">{draft.serviceDate}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-neutral-500">Property Left Clean</span>
+                  <span className={`font-semibold ${draft.propertyLeftClean ? 'text-green-600' : 'text-amber-600'}`}>
+                    {draft.propertyLeftClean ? 'Yes' : 'Not yet'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-5 py-4 border-t border-neutral-100 flex gap-3 sticky bottom-0 bg-white rounded-b-2xl z-10">
+              <button
+                type="button"
+                onClick={() => setShowReviewModal(false)}
+                className="btn-secondary flex-1"
+              >
+                Go Back
+              </button>
+              <button
+                type="button"
+                onClick={confirmAndSubmit}
+                disabled={draft.clientPaidCash && !draft.cashAmount}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-brand-600 text-white text-sm font-bold hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+              >
+                <CheckCircle className="w-4 h-4" />
+                Confirm & Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
