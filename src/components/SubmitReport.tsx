@@ -1705,26 +1705,33 @@ export default function SubmitReport() {
             {isClosing && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">Pool Closing Add-Ons <span className="text-xs font-normal text-neutral-400">(confirm each was completed)</span></label>
-                  <div className="flex flex-wrap gap-2">
-                    {POOL_CLOSING_ADD_ONS.map(addon => (
-                      <button
-                        key={addon}
-                        type="button"
-                        disabled={isSubmitting}
-                        onClick={() => {
-                          const cur = draft.closingAddOns;
-                          update('closingAddOns', cur.includes(addon) ? cur.filter(a => a !== addon) : [...cur, addon]);
-                        }}
-                        className={`py-2 px-3 rounded-full border text-xs font-medium transition-all disabled:opacity-60 ${
-                          draft.closingAddOns.includes(addon)
-                            ? 'bg-brand-600 border-brand-600 text-white'
-                            : 'bg-white border-neutral-200 text-neutral-600 hover:border-brand-300'
-                        }`}
-                      >
-                        {addon}
-                      </button>
-                    ))}
+                  <div className="rounded-2xl border-2 border-orange-300 bg-orange-50 p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <PackageCheck className="w-5 h-5 text-orange-600" />
+                      <label className="block text-sm font-bold text-orange-800">Pool Closing Add-Ons</label>
+                    </div>
+                    <p className="text-xs text-orange-600 mb-3 font-medium">Confirm each add-on that was completed for this closing.</p>
+                    <div className="flex flex-wrap gap-2">
+                      {POOL_CLOSING_ADD_ONS.map(addon => (
+                        <button
+                          key={addon}
+                          type="button"
+                          disabled={isSubmitting}
+                          onClick={() => {
+                            const cur = draft.closingAddOns;
+                            update('closingAddOns', cur.includes(addon) ? cur.filter(a => a !== addon) : [...cur, addon]);
+                          }}
+                          className={`py-2.5 px-3.5 rounded-xl border-2 text-xs font-semibold transition-all disabled:opacity-60 ${
+                            draft.closingAddOns.includes(addon)
+                              ? 'bg-orange-600 border-orange-600 text-white shadow-sm'
+                              : 'bg-white border-orange-200 text-orange-700 hover:border-orange-400'
+                          }`}
+                        >
+                          {draft.closingAddOns.includes(addon) && <Check className="w-3 h-3 inline mr-1" />}
+                          {addon}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   {(draft.closingAddOns.includes('Return Plug') || draft.closingAddOns.includes('Gizmo') || draft.closingAddOns.includes('Yellow Cover Picks')) && (
@@ -1825,18 +1832,18 @@ export default function SubmitReport() {
               </div>
             )}
 
-            <div className={`space-y-3 rounded-2xl border-2 p-4 transition-colors ${draft.clientPaidCash ? 'border-green-400 bg-green-50' : 'border-neutral-200 bg-neutral-50'}`}>
+            <div className="space-y-3 rounded-2xl border-2 border-red-300 bg-red-50 p-4">
               <div className="flex items-center gap-2 mb-1">
-                <DollarSign className={`w-5 h-5 ${draft.clientPaidCash ? 'text-green-600' : 'text-neutral-400'}`} />
-                <span className="text-sm font-bold text-neutral-800">Did the client pay cash?</span>
+                <DollarSign className="w-5 h-5 text-red-600" />
+                <span className="text-sm font-bold text-red-800">Did the client pay cash?</span>
               </div>
-              <p className="text-xs text-neutral-500 mb-2">
+              <p className="text-xs text-red-600 mb-2 font-medium">
                 {draft.clientPaidCash
                   ? 'Enter the exact cash amount received below.'
                   : 'Toggle this ON if the client paid cash for this service. Do not skip this!'}
               </p>
               <label className="flex items-center gap-3 cursor-pointer">
-                <span className={`w-11 h-6 rounded-full relative transition-colors ${draft.clientPaidCash ? 'bg-green-500' : 'bg-neutral-200'}`}>
+                <span className={`w-11 h-6 rounded-full relative transition-colors ${draft.clientPaidCash ? 'bg-red-600' : 'bg-neutral-300'}`}>
                   <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${draft.clientPaidCash ? 'translate-x-5' : ''}`} />
                   <input
                     type="checkbox"
@@ -1846,16 +1853,16 @@ export default function SubmitReport() {
                     onChange={e => update('clientPaidCash', e.target.checked)}
                   />
                 </span>
-                <span className={`flex items-center gap-1.5 text-sm font-semibold ${draft.clientPaidCash ? 'text-green-800' : 'text-neutral-700'}`}>
+                <span className={`flex items-center gap-1.5 text-sm font-semibold ${draft.clientPaidCash ? 'text-red-800' : 'text-neutral-600'}`}>
                   {draft.clientPaidCash ? 'Yes — client paid cash' : 'No cash payment'}
                 </span>
               </label>
 
               {draft.clientPaidCash && (
                 <div>
-                  <label className="block text-sm font-bold text-green-800 mb-1.5">Amount Paid (CAD) <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-bold text-red-800 mb-1.5">Amount Paid (CAD) <span className="text-red-500">*</span></label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-green-600 text-sm font-bold">$</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-red-600 text-sm font-bold">$</span>
                     <input
                       type="number"
                       min="0"
@@ -1864,7 +1871,7 @@ export default function SubmitReport() {
                       onChange={e => update('cashAmount', e.target.value)}
                       disabled={isSubmitting}
                       placeholder="0.00"
-                      className="w-full rounded-xl border-2 border-green-400 pl-7 pr-3.5 py-3 text-base font-semibold text-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 bg-white disabled:opacity-60"
+                      className="w-full rounded-xl border-2 border-red-400 pl-7 pr-3.5 py-3 text-base font-semibold text-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white disabled:opacity-60"
                     />
                   </div>
                   {draft.clientPaidCash && !draft.cashAmount && (
@@ -2203,79 +2210,96 @@ export default function SubmitReport() {
             </div>
 
             <div className="px-5 py-4 space-y-4">
-              {/* Add-ons review */}
-              <div className={`rounded-xl border-2 p-3.5 ${draft.closingAddOns.length === 0 && isClosing ? 'border-amber-300 bg-amber-50' : 'border-neutral-200 bg-neutral-50'}`}>
+              {/* Add-ons review — editable */}
+              <div className="rounded-xl border-2 border-orange-300 bg-orange-50 p-3.5">
                 <div className="flex items-center gap-2 mb-2">
-                  <PackageCheck className={`w-4 h-4 ${draft.closingAddOns.length === 0 && isClosing ? 'text-amber-500' : 'text-brand-600'}`} />
-                  <p className="text-sm font-bold text-neutral-800">Closing Add-Ons</p>
+                  <PackageCheck className="w-4 h-4 text-orange-600" />
+                  <p className="text-sm font-bold text-orange-800">Closing Add-Ons</p>
                 </div>
                 {isClosing ? (
-                  draft.closingAddOns.length === 0 ? (
-                    <div>
-                      <p className="text-sm text-amber-700 font-medium mb-2">No add-ons selected. Are you sure?</p>
-                      <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5">
+                    {POOL_CLOSING_ADD_ONS.map(addon => {
+                      const selected = draft.closingAddOns.includes(addon);
+                      return (
                         <button
+                          key={addon}
                           type="button"
-                          onClick={() => setShowReviewModal(false)}
-                          className="py-2 px-3 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700"
+                          onClick={() => {
+                            const cur = draft.closingAddOns;
+                            update('closingAddOns', cur.includes(addon) ? cur.filter(a => a !== addon) : [...cur, addon]);
+                          }}
+                          className={`py-1.5 px-2.5 rounded-lg border text-xs font-semibold transition-all ${
+                            selected
+                              ? 'bg-orange-600 border-orange-600 text-white'
+                              : 'bg-white border-orange-200 text-orange-700 hover:border-orange-400'
+                          }`}
                         >
-                          Go back & check
+                          {selected && <Check className="w-3 h-3 inline mr-1" />}
+                          {addon}
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => { update('closingAddOns', ['None — no add-ons for this closing']); }}
-                          className="py-2 px-3 rounded-lg border-2 border-amber-300 text-amber-700 text-xs font-semibold hover:bg-amber-100"
-                        >
-                          Confirm: none installed
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-wrap gap-1.5">
-                      {draft.closingAddOns.map(a => (
-                        <span key={a} className="px-2.5 py-1 rounded-full bg-brand-100 border border-brand-200 text-brand-700 text-xs font-semibold">
-                          {a}
-                        </span>
-                      ))}
-                      {draft.closingAddOns.includes('Return Plug') && draft.returnPlugQty && (
-                        <span className="text-xs text-neutral-500">Return Plugs: {draft.returnPlugQty}</span>
-                      )}
-                      {draft.closingAddOns.includes('Gizmo') && draft.gizmoQty && (
-                        <span className="text-xs text-neutral-500">Gizmos: {draft.gizmoQty}</span>
-                      )}
-                      {draft.closingAddOns.includes('Yellow Cover Picks') && draft.yellowCoverPicksQty && (
-                        <span className="text-xs text-neutral-500">Cover Picks: {draft.yellowCoverPicksQty}</span>
-                      )}
-                    </div>
-                  )
+                      );
+                    })}
+                    {draft.closingAddOns.filter(a => !POOL_CLOSING_ADD_ONS.includes(a as any) && a !== 'None — no add-ons for this closing').map(a => (
+                      <span key={a} className="px-2.5 py-1 rounded-full bg-orange-200 border border-orange-300 text-orange-800 text-xs font-semibold">
+                        {a}
+                      </span>
+                    ))}
+                    {draft.closingAddOns.length === 0 && (
+                      <p className="text-sm text-orange-700 font-medium w-full mt-1">No add-ons selected. Tap any above to add, or confirm none below.</p>
+                    )}
+                    {draft.closingAddOns.length === 0 && (
+                      <button
+                        type="button"
+                        onClick={() => update('closingAddOns', ['None — no add-ons for this closing'])}
+                        className="py-1.5 px-3 rounded-lg border-2 border-orange-300 text-orange-700 text-xs font-semibold hover:bg-orange-100"
+                      >
+                        Confirm: none installed
+                      </button>
+                    )}
+                  </div>
                 ) : (
                   <p className="text-xs text-neutral-500">Not a closing report.</p>
                 )}
               </div>
 
-              {/* Cash payment review */}
-              <div className={`rounded-xl border-2 p-3.5 ${draft.clientPaidCash ? 'border-green-300 bg-green-50' : 'border-neutral-200 bg-neutral-50'}`}>
+              {/* Cash payment review — editable */}
+              <div className="rounded-xl border-2 border-red-300 bg-red-50 p-3.5">
                 <div className="flex items-center gap-2 mb-2">
-                  <DollarSign className={`w-4 h-4 ${draft.clientPaidCash ? 'text-green-600' : 'text-neutral-400'}`} />
-                  <p className="text-sm font-bold text-neutral-800">Cash Payment</p>
+                  <DollarSign className="w-4 h-4 text-red-600" />
+                  <p className="text-sm font-bold text-red-800">Cash Payment</p>
                 </div>
-                {draft.clientPaidCash ? (
-                  draft.cashAmount ? (
-                    <p className="text-sm text-green-700 font-semibold">Client paid ${draft.cashAmount} CAD in cash</p>
-                  ) : (
-                    <div>
-                      <p className="text-sm text-red-600 font-medium mb-2">Cash toggle is ON but no amount entered!</p>
-                      <button
-                        type="button"
-                        onClick={() => setShowReviewModal(false)}
-                        className="py-2 px-3 rounded-lg bg-red-600 text-white text-xs font-semibold hover:bg-red-700"
-                      >
-                        Go back & enter amount
-                      </button>
+                <label className="flex items-center gap-3 cursor-pointer mb-2">
+                  <span className={`w-11 h-6 rounded-full relative transition-colors ${draft.clientPaidCash ? 'bg-red-600' : 'bg-neutral-300'}`}>
+                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${draft.clientPaidCash ? 'translate-x-5' : ''}`} />
+                    <input
+                      type="checkbox"
+                      className="sr-only"
+                      checked={draft.clientPaidCash}
+                      onChange={e => update('clientPaidCash', e.target.checked)}
+                    />
+                  </span>
+                  <span className={`text-sm font-semibold ${draft.clientPaidCash ? 'text-red-800' : 'text-neutral-600'}`}>
+                    {draft.clientPaidCash ? 'Yes — client paid cash' : 'No cash payment'}
+                  </span>
+                </label>
+                {draft.clientPaidCash && (
+                  <div>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-red-600 text-sm font-bold">$</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={draft.cashAmount}
+                        onChange={e => update('cashAmount', e.target.value)}
+                        placeholder="0.00"
+                        className="w-full rounded-xl border-2 border-red-400 pl-7 pr-3.5 py-2.5 text-base font-semibold text-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                      />
                     </div>
-                  )
-                ) : (
-                  <p className="text-sm text-neutral-500">No cash payment recorded for this job.</p>
+                    {draft.clientPaidCash && !draft.cashAmount && (
+                      <p className="text-xs text-red-500 font-medium mt-1">Enter the amount before submitting!</p>
+                    )}
+                  </div>
                 )}
               </div>
 
